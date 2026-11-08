@@ -1,0 +1,502 @@
+---
+// The live Washington transit map (/transit/). Logic: ./transit-map.ts. Data:
+// public/transit/ (routes and stops, weekly) and /transit/api/vehicles.json (live).
+import { systems } from '../lib/transit-feeds';
+import { ICONS, type IconMode } from './transit-icons';
+
+const routesFrom = JSON.stringify(systems.filter((s) => s.routesFrom).map((s) => [s.key, s.routesFrom]));
+const shops = JSON.stringify(systems.filter((s) => s.shop).map((s) => [s.key, s.shop]));
+
+const modes: { value: IconMode; label: string }[] = [
+  { value: 'bus', label: 'Buses' },
+  { value: 'tram', label: 'Light rail & streetcars' },
+  { value: 'rail', label: 'Trains' },
+  { value: 'ferry', label: 'Ferries' },
+];
+const regions = [
+  ['puget', 'Puget Sound'],
+  ['seattle', 'Seattle'],
+  ['state', 'All of Washington'],
+  ['bellingham', 'Bellingham'],
+  ['olympia', 'Olympia'],
+  ['spokane', 'Spokane'],
+  ['tricities', 'Tri-Cities'],
+  ['vancouver', 'Vancouver'],
+];
+---
+
+<section class="transit" id="transit-map" data-routes-from={routesFrom} data-shops={shops}>
+  <div class="frame" data-frame>
+    <div class="toolbar">
+      <div class="find">
+        <label class="search">
+          <span class="visually-hidden">Find a route or agency</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.25 4.24-1.42 1.42-4.24-4.25A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" /></svg>
+          <input
+            type="search"
+            data-search
+            placeholder="Find a route or agency"
+            autocomplete="off"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="tm-results"
+            aria-expanded="false"
+          />
+          <ul id="tm-results" class="results" data-results role="listbox" hidden></ul>
+        </label>
+        <p class="focus" data-focus hidden>
+          Showing <strong data-focus-name></strong>
+          <a data-focus-site hidden target="_blank" rel="noopener">Website ↗</a>
+          <a data-focus-shop hidden target="_blank" rel="noopener">Merch shop ↗</a>
+          <button type="button">Show everyone</button>
+        </p>
+      </div>
+      <fieldset class="toggles">
+        <legend class="visually-hidden">Show</legend>
+        {
+          modes.map((m) => (
+            <label class="toggle" data-mode={m.value}>
+              <input type="checkbox" name="mode" value={m.value} checked />
+              <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d={ICONS[m.value]} fill-rule="evenodd" />
+              </svg>
+              {m.label}
+            </label>
+          ))
+        }
+        <span class="divider" aria-hidden="true"></span>
+        <label class="toggle plain">
+          <input type="checkbox" name="layer" value="routes" checked />
+          Routes
+        </label>
+        <label class="toggle plain">
+          <input type="checkbox" name="layer" value="stops" checked />
+          Stops
+        </label>
+        <label class="toggle plain">
+          <input type="checkbox" name="layer" value="official" />
+          Official colors
+        </label>
+      </fieldset>
+      <label class="region">
+        <span class="visually-hidden">Jump to</span>
+        <select data-region>
+          {regions.map(([value, label]) => <option value={value}>{label}</option>)}
+        </select>
+      </label>
+    </div>
+    <div class="map" data-map role="region" aria-label="Map of live transit vehicles in Washington"></div>
+    <p class="status" data-status aria-live="polite">Loading the map…</p>
+  </div>
+</section>
+
+<script>
+  import { startTransitMap } from './transit-map';
+
+  const root = document.getElementById('transit-map');
+  if (root) startTransitMap(root);
+</script>
+
+<style>
+  .transit {
+    /* Full-bleed: the map is the page. */
+    width: 100vw;
+    margin-inline: calc(50% - 50vw);
+  }
+
+  .frame {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    justify-content: space-between;
+    width: min(100% - 2 * var(--space-6), var(--wide));
+    margin-inline: auto;
+    padding-block: var(--space-3);
+  }
+
+  .find {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    flex-basis: 100%;
+  }
+
+  .search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 18rem;
+    max-width: 28rem;
+  }
+
+  .search svg {
+    position: absolute;
+    left: var(--space-3);
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: var(--ink-muted);
+    pointer-events: none;
+  }
+
+  .search input {
+    width: 100%;
+    font: inherit;
+    font-size: var(--step--1);
+    color: var(--ink);
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: var(--space-2) var(--space-4) var(--space-2) calc(var(--space-3) + 1.5rem);
+  }
+
+  .search input:focus-visible {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  .results {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + var(--space-1));
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: var(--space-1);
+    list-style: none;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 28px rgb(0 0 0 / 0.16);
+    font-size: var(--step--1);
+  }
+
+  .results :global(li) {
+    display: flex;
+    gap: var(--space-1) var(--space-2);
+    align-items: baseline;
+    flex-wrap: wrap;
+    padding: var(--space-2);
+    border-radius: 0.4rem;
+    cursor: pointer;
+  }
+
+  .results :global(li.active),
+  .results :global(li:hover) {
+    background: color-mix(in oklab, var(--ink), transparent 92%);
+  }
+
+  .results :global(.tm-result-label) {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .results :global(.tm-result-detail) {
+    color: var(--ink-muted);
+    flex-basis: 100%;
+  }
+
+  .focus {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+    font-size: var(--step--1);
+    background: color-mix(in oklab, var(--accent), var(--bg-raised) 85%);
+    border: 1px solid color-mix(in oklab, var(--accent), transparent 50%);
+    border-radius: 999px;
+  }
+
+  .focus[hidden] {
+    display: none;
+  }
+
+  .focus a {
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+
+  .focus button {
+    font: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.15rem var(--space-3);
+    cursor: pointer;
+  }
+
+  .toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .toggle {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg-raised);
+    color: var(--ink-muted);
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .toggle:has(input:checked) {
+    color: var(--ink);
+    border-color: color-mix(in oklab, var(--ink), transparent 70%);
+  }
+
+  .toggle:has(input:focus-visible) {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+  }
+
+  /* Mode icon in a disc: outlined when off, filled with the mode color when on. */
+  .mode-icon {
+    width: 1.35rem;
+    height: 1.35rem;
+    margin-left: calc(-1 * var(--space-2));
+    padding: 0.2rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--c);
+    fill: var(--c);
+    flex: none;
+  }
+
+  .toggle:has(input:checked) .mode-icon {
+    background: var(--c);
+    fill: #fff;
+  }
+
+  [data-mode='bus'] { --c: #2f6fdf; }
+  [data-mode='tram'] { --c: #0c8a6a; }
+  [data-mode='rail'] { --c: #7048e8; }
+  [data-mode='ferry'] { --c: #1098ad; }
+
+  .toggle.plain::before {
+    content: '';
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 0.2rem;
+    border: 2px solid var(--ink-muted);
+  }
+
+  .toggle.plain:has(input:checked)::before {
+    background: var(--ink-muted);
+    box-shadow: inset 0 0 0 2px var(--bg-raised);
+  }
+
+  .divider {
+    width: 1px;
+    height: 1.25rem;
+    background: var(--line);
+  }
+
+  .region select {
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-3);
+  }
+
+  .map {
+    height: clamp(26rem, 76vh, 58rem);
+    border-block: 1px solid var(--line);
+    background: color-mix(in oklab, var(--ink), var(--bg) 94%);
+  }
+
+  .status {
+    width: min(100% - 2 * var(--space-6), var(--wide));
+    margin: var(--space-2) auto 0;
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Fullscreen: toolbar on top, map fills the rest. */
+  .frame:fullscreen {
+    height: 100vh;
+  }
+
+  .frame:fullscreen .map {
+    flex: 1;
+    height: auto;
+  }
+
+  .frame:fullscreen .status {
+    margin-bottom: var(--space-2);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* MapLibre's popups and controls, in the site's type and colors. */
+  .transit :global(.maplibregl-map) {
+    font: inherit;
+  }
+
+  .transit :global(.tm-popup .maplibregl-popup-content) {
+    padding: var(--space-3) var(--space-4);
+    padding-right: var(--space-8);
+    background: var(--bg-raised);
+    color: var(--ink);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+    font-family: var(--font-text);
+    font-size: var(--step--1);
+    line-height: 1.4;
+  }
+
+  .transit :global(.tm-popup p) {
+    margin: 0 0 var(--space-1);
+  }
+
+  .transit :global(.tm-popup p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .transit :global(.tm-popup .tm-title) {
+    font-weight: 700;
+    font-size: var(--step-0);
+  }
+
+  .transit :global(.tm-popup .tm-meta) {
+    color: var(--ink-muted);
+  }
+
+  .transit :global(.tm-chip) {
+    display: inline-block;
+    min-width: 1.6em;
+    padding: 0 0.4em;
+    border-radius: 0.3em;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0.2em 0.2em 0;
+  }
+
+  .transit :global(.tm-icon) {
+    width: 1.1em;
+    height: 1.1em;
+    vertical-align: -0.2em;
+    margin-right: 0.3em;
+  }
+
+  .transit :global(.tm-station) {
+    width: 1.3em;
+    height: 1.3em;
+    padding: 0.12em;
+    border: 1.5px solid currentColor;
+    border-radius: 0.3em;
+  }
+
+  .transit :global(.tm-link) {
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .transit :global(.tm-vehicle) {
+    margin: var(--space-2) calc(-1 * var(--space-2)) var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background: light-dark(#eef3f6, #232a31);
+  }
+
+  .transit :global(.tm-vehicle-art) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .transit :global(.tm-vehicle figcaption) {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--space-1);
+  }
+
+  .transit :global(.tm-vehicle figcaption span) {
+    color: var(--ink-muted);
+  }
+
+  .transit :global(.tm-links) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    margin-top: var(--space-1) !important;
+  }
+
+  .transit :global(.tm-links a) {
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+
+  .transit :global(.tm-chips) {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: var(--space-2);
+  }
+
+  .transit :global(.maplibregl-popup-close-button) {
+    color: var(--ink-muted);
+    font-size: 1.25rem;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .transit :global(.maplibregl-popup-anchor-bottom .maplibregl-popup-tip) {
+    border-top-color: var(--bg-raised);
+  }
+
+  .transit :global(.maplibregl-popup-anchor-top .maplibregl-popup-tip) {
+    border-bottom-color: var(--bg-raised);
+  }
+
+  .transit :global(.maplibregl-popup-anchor-left .maplibregl-popup-tip) {
+    border-right-color: var(--bg-raised);
+  }
+
+  .transit :global(.maplibregl-popup-anchor-right .maplibregl-popup-tip) {
+    border-left-color: var(--bg-raised);
+  }
+</style>

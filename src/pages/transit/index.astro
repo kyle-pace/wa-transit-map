@@ -1,0 +1,205 @@
+---
+// Live Washington transit map. Map: src/components/TransitMap.astro. Feeds:
+// src/lib/transit-feeds.ts. Routes and stops: scripts/build-transit.ts (weekly).
+import Base from '../../layouts/Base.astro';
+import { StatusBadge } from 'kp-design';
+import TransitMap from '../../components/TransitMap.astro';
+import { systems } from '../../lib/transit-feeds';
+import meta from '../../../public/transit/meta.json';
+
+
+const withData = new Set(meta.systems.filter((_, i) => meta.agencies.some(([s]) => s === i)).map((s) => s.key));
+const liveSystems = systems.filter((s) => s.live).sort((a, b) => a.name.localeCompare(b.name));
+const scheduleSystems = systems.filter((s) => !s.live && withData.has(s.key)).sort((a, b) => a.name.localeCompare(b.name));
+const credits = systems.filter((s) => s.credit).map((s) => s.credit!);
+const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' });
+---
+
+<Base
+  title="Washington transit, live"
+  description="Every bus, train and ferry in Washington that reports where it is, on one zoomable map, with every route and stop. Updated every 15 seconds."
+  accent="sky"
+  image="/transit/share.png"
+  imageAlt="Washington transit, live: a dark map of Puget Sound's transit routes in many colors, dotted with vehicles."
+>
+  <header class="intro">
+    <p class="eyebrow"><a href="https://kylepace.dev/">Experiments</a> <StatusBadge status="in-progress" /></p>
+    <h1>Washington transit, live.</h1>
+    <p class="lede prose">
+      Every bus, train and ferry in the state that reports where it is, on one map. {liveSystems.length} agencies
+      share live positions, and {withData.size} publish their routes and stops. Zoom in,
+      search for a route, or tap a vehicle to see where it’s headed.
+    </p>
+  </header>
+
+  <TransitMap />
+
+  <section class="systems" aria-labelledby="systems-heading">
+    <div class="systems-head">
+      <h2 id="systems-heading">Who’s on the map</h2>
+      <a class="meet" href="/transit/agencies/">Meet all {withData.size} agencies →</a>
+    </div>
+    <div class="columns">
+      <div>
+        <h3>Live positions</h3>
+        <ul class="system-list">
+          {
+            liveSystems.map((s) => (
+              <li data-system={s.key} data-state="loading">
+                <span class="dot" aria-hidden="true" />
+                <span class="name">{s.name}</span>
+                <span class="count" data-count>
+                  …
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div>
+        <h3>Routes and stops</h3>
+        <p class="muted small">These agencies publish schedules but not live locations, so their routes and stops are drawn without vehicles.</p>
+        <ul class="system-list compact">
+          {scheduleSystems.map((s) => <li>{s.name}</li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="fine-print prose muted">
+    <p>
+      Live positions come from each agency’s open GTFS-realtime feed and refresh every 15 seconds. Routes and stops
+      come from their published GTFS schedules, last rebuilt {updated}. Feeds found through the
+      <a href="https://mobilitydatabase.org">Mobility Database</a> and <a href="https://www.transit.land">Transitland</a>.
+      Map tiles by <a href="https://openfreemap.org">OpenFreeMap</a>, map data © OpenStreetMap contributors.
+    </p>
+    <p>
+      Privacy: your browser asks OpenFreeMap’s servers for the part of the map you’re looking at. If you use “Find my
+      location”, your position stays in your browser. Analytics works the same as the rest of kylepace.dev
+      (<a href="https://kylepace.dev/privacy/">privacy</a>).
+    </p>
+    {credits.map((c) => <p>{c}</p>)}
+    <p><a href="https://kylepace.dev/">More experiments</a></p>
+  </div>
+</Base>
+
+<style>
+  .intro {
+    padding-bottom: var(--space-6);
+  }
+
+  .intro h1 {
+    max-width: 18ch;
+  }
+
+  .eyebrow {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .eyebrow a {
+    color: inherit;
+  }
+
+  .lede {
+    font-size: var(--step-1);
+    color: var(--ink-muted);
+  }
+
+  .systems {
+    margin-top: var(--space-12);
+  }
+
+  .systems-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+  }
+
+  .systems-head h2 {
+    margin: 0;
+  }
+
+  .meet {
+    font-weight: 700;
+    color: var(--accent-ink);
+  }
+
+  .columns {
+    display: grid;
+    gap: var(--space-8);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  }
+
+  h3 {
+    font-size: var(--step-0);
+    margin: 0 0 var(--space-3);
+  }
+
+  .small {
+    font-size: var(--step--1);
+    margin: 0 0 var(--space-3);
+  }
+
+  .system-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: var(--step--1);
+  }
+
+  .system-list li {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .system-list.compact {
+    columns: 2 12rem;
+    column-gap: var(--space-6);
+  }
+
+  .system-list.compact li {
+    break-inside: avoid;
+  }
+
+  .name {
+    flex: 1;
+  }
+
+  .count {
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--line);
+    flex: none;
+  }
+
+  [data-state='live'] .dot {
+    background: var(--lime);
+  }
+
+  [data-state='live'] .count {
+    color: var(--ink);
+  }
+
+  [data-state='error'] .dot {
+    background: var(--coral);
+  }
+
+  .fine-print {
+    margin-top: var(--space-12);
+    font-size: var(--step--1);
+  }
+</style>

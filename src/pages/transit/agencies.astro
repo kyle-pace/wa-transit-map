@@ -1,0 +1,797 @@
+---
+// Every transit agency on the live map (/transit/), one card each, with its network
+// drawn from the same route data the map uses (public/transit/). Live vehicle
+// counts load from /transit/api/vehicles.json.
+import Base from '../../layouts/Base.astro';
+import { StatusBadge } from 'kp-design';
+import { systems } from '../../lib/transit-feeds';
+import { ICONS, MODE_LABELS, type IconMode } from '../../components/transit-icons';
+import meta from '../../../public/transit/meta.json';
+import routesGeo from '../../../public/transit/routes.json';
+import stopsData from '../../../public/transit/stops.json';
+import { feature, mesh } from 'topojson-client';
+import usCounties from 'us-atlas/counties-10m.json';
+import worldLand from 'world-atlas/land-10m.json';
+
+
+type Mode = 'bus' | 'rail' | 'tram' | 'ferry' | 'other';
+const W = 280;
+const H = 170;
+const PAD = 22;
+
+// Stops per system (a stop shared by two agencies counts for the first).
+const stopCounts = new Map<number, number>();
+for (const s of stopsData.stops as unknown as [number, number, string, number[], number, string][]) stopCounts.set(s[4], (stopCounts.get(s[4]) ?? 0) + 1);
+
+interface Line {
+  coords: number[][];
+  color: string;
+  mode: Mode;
+}
+
+// A route belongs to the system named like its agency (Sound Transit's express buses ship
+// in other agencies' files), else to the system whose file it came from. Same rule as the map.
+const norm = (n: string) => n.toLowerCase().replace(/[^a-z0-9]/g, '');
+const byName = new Map(meta.systems.map((s, i) => [norm(s.name), i]));
+const owner = meta.agencies.map(([sys, name]) => byName.get(norm(name as string)) ?? (sys as number));
+
+const linesBySystem = new Map<number, Line[]>();
+for (const f of routesGeo.features as unknown as { properties: { i: number; c: string; m: Mode }; geometry: { type: string; coordinates: number[][] | number[][][] } }[]) {
+  const route = meta.routes[f.properties.i];
+  const system = owner[route[0] as number];
+  const lines = f.geometry.type === 'LineString' ? [f.geometry.coordinates as number[][]] : (f.geometry.coordinates as number[][][]);
+  // The longest line is enough to draw the network's shape.
+  const longest = lines.reduce((a, b) => (b.length > a.length ? b : a));
+  const list = linesBySystem.get(system) ?? [];
+  list.push({ coords: longest, color: f.properties.c, mode: f.properties.m });
+  linesBySystem.set(system, list);
+}
+
+/** Douglas-Peucker in screen pixels. */
+function simplify(pts: number[][], tol: number): number[][] {
+  if (pts.length <= 2) return pts;
+  const keep = new Uint8Array(pts.length);
+  keep[0] = keep[pts.length - 1] = 1;
+  const stack: [number, number][] = [[0, pts.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop()!;
+    const [ax, ay] = pts[a];
+    const [bx, by] = pts[b];
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy || 1;
+    let max = 0, idx = -1;
+    for (let i = a + 1; i < b; i++) {
+      const t = Math.max(0, Math.min(1, ((pts[i][0] - ax) * dx + (pts[i][1] - ay) * dy) / len2));
+      const ex = ax + t * dx - pts[i][0], ey = ay + t * dy - pts[i][1];
+      const d = ex * ex + ey * ey;
+      if (d > max) {
+        max = d;
+        idx = i;
+      }
+    }
+    if (idx >= 0 && max > tol * tol) {
+      keep[idx] = 1;
+      stack.push([a, idx], [idx, b]);
+    }
+  }
+  return pts.filter((_, i) => keep[i]);
+}
+
+const rank: Record<Mode, number> = { bus: 0, other: 0, ferry: 1, tram: 2, rail: 3 };
+
+// ---------- The map behind each network ----------
+// Land: US Census counties (clipped to the shoreline, so Puget Sound is water) for
+// Washington, Oregon and Idaho, plus Natural Earth land for British Columbia. Both public domain.
+type Ring = number[][];
+const REGION = [-126.5, 44.5, -115.5, 50.2];
+const near = (r: Ring) => r.some(([x, y]) => x > REGION[0] && x < REGION[2] && y > REGION[1] && y < REGION[3]);
+const PNW = ['53', '41', '16'];
+const counties = feature(usCounties as never, (usCounties as never as { objects: { counties: never } }).objects.counties) as unknown as GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
+const landRings: Ring[] = [];
+for (const f of counties.features) {
+  if (!PNW.some((p) => String(f.id).startsWith(p))) continue;
+  const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  for (const poly of polys) landRings.push(poly[0]);
+}
+// Canada: Natural Earth land, north of the border only.
+const world = feature(worldLand as never, (worldLand as never as { objects: { land: never } }).objects.land) as unknown as GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
+for (const f of world.features) {
+  const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  for (const poly of polys) {
+    const ring = poly[0].filter(([, y]) => y >= 48.95);
+    if (ring.length > 2 && near(ring)) landRings.push(clipRing(poly[0], [-140, 48.99, -110, 60]));
+  }
+}
+const borders = mesh(usCounties as never, (usCounties as never as { objects: { counties: never } }).objects.counties, (a: { id: string }, b: { id: string }) => a !== b && PNW.some((p) => String(a.id).startsWith(p) || String(b.id).startsWith(p))) as unknown as GeoJSON.MultiLineString;
+
+/** Sutherland-Hodgman: a polygon ring clipped to a rectangle [w, s, e, n]. */
+function clipRing(ring: Ring, [w, s, e, n]: number[]): Ring {
+  let out = ring;
+  const edges: [(p: number[]) => boolean, (a: number[], b: number[]) => number[]][] = [
+    [(p) => p[0] >= w, (a, b) => [w, a[1] + ((b[1] - a[1]) * (w - a[0])) / (b[0] - a[0])]],
+    [(p) => p[0] <= e, (a, b) => [e, a[1] + ((b[1] - a[1]) * (e - a[0])) / (b[0] - a[0])]],
+    [(p) => p[1] >= s, (a, b) => [a[0] + ((b[0] - a[0]) * (s - a[1])) / (b[1] - a[1]), s]],
+    [(p) => p[1] <= n, (a, b) => [a[0] + ((b[0] - a[0]) * (n - a[1])) / (b[1] - a[1]), n]],
+  ];
+  for (const [inside, cross] of edges) {
+    const input = out;
+    out = [];
+    for (let i = 0; i < input.length; i++) {
+      const cur = input[i];
+      const prev = input[(i + input.length - 1) % input.length];
+      if (inside(cur)) {
+        if (!inside(prev)) out.push(cross(prev, cur));
+        out.push(cur);
+      } else if (inside(prev)) out.push(cross(prev, cur));
+    }
+    if (!out.length) break;
+  }
+  return out;
+}
+
+/** Liang-Barsky: the parts of a polyline inside a rectangle. */
+function clipLine(line: Ring, [w, s, e, n]: number[]): Ring[] {
+  const parts: Ring[] = [];
+  let cur: Ring = [];
+  for (let i = 1; i < line.length; i++) {
+    let [x0, y0] = line[i - 1];
+    let [x1, y1] = line[i];
+    let t0 = 0, t1 = 1;
+    const dx = x1 - x0, dy = y1 - y0;
+    let ok = true;
+    for (const [p, q] of [[-dx, x0 - w], [dx, e - x0], [-dy, y0 - s], [dy, n - y0]]) {
+      if (p === 0) {
+        if (q < 0) ok = false;
+      } else {
+        const r = q / p;
+        if (p < 0) t0 = Math.max(t0, r);
+        else t1 = Math.min(t1, r);
+      }
+    }
+    if (!ok || t0 > t1) {
+      if (cur.length > 1) parts.push(cur);
+      cur = [];
+      continue;
+    }
+    const a = [x0 + t0 * dx, y0 + t0 * dy];
+    const b = [x0 + t1 * dx, y0 + t1 * dy];
+    if (!cur.length || t0 > 0) {
+      if (cur.length > 1) parts.push(cur);
+      cur = [a];
+    }
+    cur.push(b);
+    if (t1 < 1) {
+      parts.push(cur);
+      cur = [];
+    }
+  }
+  if (cur.length > 1) parts.push(cur);
+  return parts;
+}
+
+// The build gives routes without a color one of these, per system (scripts/build-transit.ts).
+// They aren't the agency's own, so they never count as its brand color.
+const BUILD_DEFAULTS = ['#2f6fdf', '#d6336c', '#0c8a6a', '#e8590c', '#7048e8', '#1098ad', '#c2255c', '#5c940d', '#ae3ec9', '#d9480f', '#1c7ed6', '#2b8a3e'];
+
+/** The agency's brand color: the color it gives most of its own routes in its published data. */
+function brandColor(system: number, routes: (string | number)[][]) {
+  const counts = new Map<string, number>();
+  for (const r of routes) {
+    const fromFile = meta.agencies[r[0] as number][0] as number;
+    const color = String(r[4]).toLowerCase();
+    if (color === BUILD_DEFAULTS[fromFile % BUILD_DEFAULTS.length]) continue;
+    counts.set(color, (counts.get(color) ?? 0) + 1);
+  }
+  const best = [...counts].sort((a, b) => b[1] - a[1])[0];
+  return best?.[0] ?? null;
+}
+
+/** Relative luminance (WCAG) of a #rrggbb color. */
+function luminance(hex: string) {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map((c) => c / 255)
+    .map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * lum[0] + 0.7152 * lum[1] + 0.0722 * lum[2];
+}
+
+/**
+ * The card's background and text colors for an agency's brand color: dark or white text,
+ * whichever reads better. Some mid-tone brand colors (a bright red, say) don't reach
+ * 4.5:1 with either, so those are deepened a little at a time until white text does.
+ */
+function brandColors(hex: string) {
+  const DARK = 0.0063; // luminance of #141317, the dark text
+  const ratio = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  let bg = hex;
+  for (let step = 0; step < 20; step++) {
+    const l = luminance(bg);
+    if (ratio(l, DARK) >= 4.5 && ratio(l, DARK) >= ratio(l, 1)) return { bg, text: '#141317' };
+    if (ratio(l, 1) >= 4.5) return { bg, text: '#ffffff' };
+    const n = parseInt(bg.slice(1), 16);
+    bg = '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(c * 0.94).toString(16).padStart(2, '0')).join('');
+  }
+  return { bg, text: '#ffffff' };
+}
+
+function drawNetwork(lines: Line[]) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const l of lines) for (const [x, y] of l.coords) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  }
+  const kx = Math.cos((((minY + maxY) / 2) * Math.PI) / 180);
+  const spanX = Math.max((maxX - minX) * kx, 0.01);
+  const spanY = Math.max(maxY - minY, 0.01);
+  const scale = Math.min((W - PAD * 2) / spanX, (H - PAD * 2) / spanY);
+  const ox = (W - spanX * scale) / 2;
+  const oy = (H - spanY * scale) / 2;
+  const px = ([x, y]: number[]) => [ox + (x - minX) * kx * scale, oy + (maxY - y) * scale];
+  // The whole card in degrees, a little beyond its edges.
+  const m = 4 / scale;
+  const frame = [minX - (ox / scale + m) / kx, maxY - (H - oy) / scale - m, minX + ((W - ox) / scale + m) / kx, maxY + oy / scale + m];
+  const svgPath = (pts: number[][], close = false) => {
+    const p = simplify(pts.map(px), 0.7);
+    return p.length < 2 ? '' : p.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('') + (close ? 'Z' : '');
+  };
+  const inFrame = (r: Ring) => {
+    let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+    for (const [x, y] of r) { a = Math.min(a, x); c = Math.max(c, x); b = Math.min(b, y); d = Math.max(d, y); }
+    return !(c < frame[0] || a > frame[2] || d < frame[1] || b > frame[3]);
+  };
+  const land = landRings.filter(inFrame).map((r) => clipRing(r, frame)).filter((r) => r.length > 2).map((r) => svgPath(r, true)).join('');
+  const lines2 = borders.coordinates.filter(inFrame).flatMap((l) => clipLine(l, frame)).map((l) => svgPath(l)).join('');
+  const routes = [...lines]
+    .sort((a, b) => rank[a.mode] - rank[b.mode])
+    .map((l) => {
+      const pts = simplify(l.coords.map(px), 0.9);
+      const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${Math.round(x)} ${Math.round(y)}`).join('');
+      return { d, color: l.color, wide: l.mode !== 'bus' && l.mode !== 'other' };
+    });
+  return { land, borders: lines2, routes };
+}
+
+function region(lines: Line[]) {
+  let minX = Infinity, maxX = -Infinity, sx = 0, sy = 0, n = 0;
+  for (const l of lines) for (const [x, y] of l.coords) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    sx += x; sy += y; n++;
+  }
+  if (maxX - minX > 3) return 'Statewide';
+  const [cx, cy] = [sx / n, sy / n];
+  if (cx > -120.8) return 'Central & Eastern';
+  if (cy < 46.75) return 'Southwest';
+  if (cx < -122.75 || cy < 47.05) return 'Olympic Peninsula & Coast';
+  return 'Puget Sound';
+}
+
+const regions = ['Puget Sound', 'Olympic Peninsula & Coast', 'Southwest', 'Central & Eastern', 'Statewide'];
+
+const cards = meta.systems
+  .map((s, i) => {
+    const lines = linesBySystem.get(i);
+    if (!lines?.length) return null;
+    const def = systems.find((d) => d.key === s.key)!;
+    // Count each route once (Link and ST Express appear in several agencies' files).
+    const seen = new Set<string>();
+    const routes = meta.routes.filter((r) => {
+      if (owner[r[0] as number] !== i) return false;
+      const key = `${r[2] || r[3]}|${r[5]}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const modes = [...new Set(routes.map((r) => (r[5] === 'other' ? 'bus' : r[5]) as IconMode))].sort((a, b) => rank[b] - rank[a]);
+    const agencyNames = meta.agencies.filter((_, a) => owner[a] === i).map(([, name]) => name as string);
+    // Partner agencies only: skip the system's own name variants ("BFT", "Spokane Transit Authority").
+    const firstWord = (n: string) => n.toLowerCase().split(/\s+/)[0];
+    const others = agencyNames.filter((n) => n !== s.name && !s.name.includes(n) && firstWord(n) !== firstWord(s.name) && !/^[A-Z-]{2,5}$/.test(n) && !(s.key === 'kcm' && n === 'Metro Transit'));
+    const brand = brandColor(i, routes);
+    // The agency's own website, as it publishes it in its schedule data.
+    const owned = meta.agencies.map((a, n) => ({ a: a as unknown as [number, string, string?], n })).filter(({ n }) => owner[n] === i);
+    const site = (owned.find(({ a }) => norm(a[1]) === norm(s.name) && a[2]) ?? owned.find(({ a }) => a[2]))?.a[2];
+    const colors = brand ? brandColors(brand) : null;
+    return {
+      brand: colors?.bg ?? null,
+      brandText: colors?.text ?? null,
+      key: s.key,
+      name: s.name,
+      also: others.length && others.length < 4 ? others : [],
+      live: Boolean(def.live),
+      shop: def.shop,
+      site,
+      routes: routes.length,
+      stops: stopCounts.get(i) ?? 0,
+      modes,
+      region: region(lines),
+      paths: drawNetwork(lines),
+    };
+  })
+  .filter((c): c is NonNullable<typeof c> => c !== null)
+  .sort((a, b) => b.routes - a.routes || a.name.localeCompare(b.name));
+
+const totals = {
+  agencies: cards.length,
+  routes: cards.reduce((n, c) => n + c.routes, 0),
+  stops: (stopsData.stops as unknown[]).length,
+  live: cards.filter((c) => c.live).length,
+};
+---
+
+<Base
+  title="Every transit agency in Washington"
+  description={`All ${totals.agencies} transit agencies on Kyle Pace’s live Washington transit map, each with its network drawn from its published routes, and how many vehicles are out right now.`}
+  accent="sky"
+  image="/transit/share-agencies.png"
+  imageAlt="Every transit agency in Washington: a grid of agency route networks, each drawn in its brand color."
+>
+  <header class="intro">
+    <p class="eyebrow"><a href="https://kylepace.dev/">Experiments</a> / <a href="/transit/">Transit map</a> <StatusBadge status="in-progress" /></p>
+    <h1>Every agency, one network at a time.</h1>
+    <p class="lede prose">
+      {totals.agencies} agencies keep Washington moving, from King County Metro’s {cards.find((c) => c.key === 'kcm')?.routes} routes to a one-boat island ferry. Each drawing is the agency’s real route map.
+    </p>
+    <dl class="totals">
+      <div><dt>Agencies</dt><dd>{totals.agencies}</dd></div>
+      <div><dt>Routes</dt><dd>{totals.routes.toLocaleString()}</dd></div>
+      <div><dt>Stops</dt><dd>{totals.stops.toLocaleString()}</dd></div>
+      <div><dt>Moving right now</dt><dd data-total-live>…</dd></div>
+    </dl>
+  </header>
+
+  <div class="controls">
+    <div class="regions" role="group" aria-label="Region">
+      <button type="button" aria-pressed="true" data-region="">All</button>
+      {regions.filter((r) => cards.some((c) => c.region === r)).map((r) => <button type="button" aria-pressed="false" data-region={r}>{r}</button>)}
+    </div>
+    <label class="sort">
+      Sort
+      <select data-sort>
+        <option value="size">Biggest networks</option>
+        <option value="live">Most vehicles out now</option>
+        <option value="name">A to Z</option>
+      </select>
+    </label>
+  </div>
+
+  <ul class="cards" data-cards>
+    {
+      cards.map((c, n) => (
+        <li
+          class="card"
+          data-key={c.key}
+          data-region={c.region}
+          data-size={n}
+          data-name={c.name}
+          data-live-count="-1"
+          data-branded={c.brand ? '' : undefined}
+          style={c.brand ? `--brand: ${c.brand}; --brand-ink: ${c.brandText}` : undefined}
+        >
+          <div class="brand">
+            <h2>
+              <a href={`/transit/?agency=${c.key}`}>{c.name}</a>
+            </h2>
+            {c.also.length > 0 && <p class="also">with {c.also.join(', ')}</p>}
+            <p class="modes">
+              {c.modes.map((m) => (
+                <span class="mode" title={MODE_LABELS[m]}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={ICONS[m]} fill-rule="evenodd" />
+                  </svg>
+                  <span class="visually-hidden">{MODE_LABELS[m]}</span>
+                </span>
+              ))}
+            </p>
+          </div>
+          <a class="art" href={`/transit/?agency=${c.key}`} tabindex="-1" aria-hidden="true">
+            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice">
+              <path class="land" d={c.paths.land} />
+              <path class="borders" d={c.paths.borders} />
+              <g class="network">
+                {c.paths.routes.map((p) => (
+                  <path d={p.d} stroke={p.color} stroke-width={p.wide ? 2.6 : 1.4} />
+                ))}
+              </g>
+            </svg>
+          </a>
+          <div class="body">
+            <p class="stats">
+              <span><strong>{c.routes}</strong> {c.routes === 1 ? 'route' : 'routes'}</span>
+              <span><strong>{c.stops.toLocaleString()}</strong> stops</span>
+              <span class="region-tag">{c.region}</span>
+            </p>
+            <p class="live" data-live={c.live ? 'pending' : 'none'}>
+              <span class="dot" aria-hidden="true" />
+              <span data-live-text>{c.live ? 'Checking…' : 'Schedules only, no live tracking'}</span>
+            </p>
+            {
+              (c.site || c.shop) && (
+                <p class="links">
+                  {c.site && (
+                    <a href={c.site} target="_blank" rel="noopener">
+                      Website<span class="visually-hidden"> for {c.name}</span> ↗
+                    </a>
+                  )}
+                  {c.shop && (
+                    <a href={c.shop} target="_blank" rel="noopener">
+                      Merch shop<span class="visually-hidden"> for {c.name}</span> ↗
+                    </a>
+                  )}
+                </p>
+              )
+            }
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+
+  <p class="fine-print prose muted">
+    Drawings come from each agency’s published GTFS schedule, one line per route. Live counts are vehicles reporting
+    in the last 15 minutes. <a href="/transit/">Back to the live map</a>
+  </p>
+</Base>
+
+<script>
+  const list = document.querySelector<HTMLElement>('[data-cards]')!;
+  const cards = [...list.querySelectorAll<HTMLElement>('.card')];
+  const sortSelect = document.querySelector<HTMLSelectElement>('[data-sort]')!;
+  const regionButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-region]')].filter((b) => b.tagName === 'BUTTON');
+
+  function sort() {
+    const by = sortSelect.value;
+    const sorted = [...cards].sort((a, b) => {
+      if (by === 'name') return a.dataset.name!.localeCompare(b.dataset.name!);
+      if (by === 'live') return Number(b.dataset.liveCount) - Number(a.dataset.liveCount) || Number(a.dataset.size) - Number(b.dataset.size);
+      return Number(a.dataset.size) - Number(b.dataset.size);
+    });
+    list.append(...sorted);
+  }
+  sortSelect.addEventListener('change', sort);
+
+  for (const button of regionButtons) {
+    button.addEventListener('click', () => {
+      for (const b of regionButtons) b.setAttribute('aria-pressed', String(b === button));
+      const region = button.dataset.region;
+      for (const card of cards) card.hidden = Boolean(region) && card.dataset.region !== region;
+    });
+  }
+
+  // Live vehicle counts, refreshed every 30 seconds while the page is open.
+  async function refresh() {
+    try {
+      const data = (await fetch('/transit/api/vehicles.json').then((r) => r.json())) as { feeds: [string, boolean, number][] };
+      const counts = new Map<string, [boolean, number]>(data.feeds.map(([k, ok, n]) => [k, [ok, n]]));
+      // The Seattle Streetcar's live feed counts toward the city's routes in King County Metro's card.
+      let total = 0;
+      for (const [, [, n]] of counts) total += n;
+      document.querySelector('[data-total-live]')!.textContent = total.toLocaleString();
+      for (const card of cards) {
+        const entry = counts.get(card.dataset.key!);
+        const live = card.querySelector<HTMLElement>('[data-live]')!;
+        if (!entry) continue;
+        const [ok, n] = entry;
+        card.dataset.liveCount = String(ok ? n : 0);
+        live.dataset.live = !ok ? 'error' : n ? 'on' : 'quiet';
+        live.querySelector('[data-live-text]')!.textContent = !ok ? 'Live feed not answering' : n ? `${n.toLocaleString()} out right now` : 'Nothing running right now';
+      }
+      if (sortSelect.value === 'live') sort();
+    } catch {
+      document.querySelector('[data-total-live]')!.textContent = '–';
+    }
+  }
+  refresh();
+  setInterval(() => !document.hidden && refresh(), 30_000);
+</script>
+
+<style>
+  .intro {
+    padding-bottom: var(--space-6);
+  }
+
+  .intro h1 {
+    max-width: 20ch;
+  }
+
+  .eyebrow {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow a {
+    color: inherit;
+  }
+
+  .lede {
+    font-size: var(--step-1);
+    color: var(--ink-muted);
+  }
+
+  .totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6) var(--space-12);
+    margin: var(--space-8) 0 0;
+  }
+
+  .totals dt {
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .totals dd {
+    margin: 0;
+    font-size: var(--step-3);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+  }
+
+  .regions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .regions button,
+  .sort select {
+    font: inherit;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: var(--space-1) var(--space-3);
+    cursor: pointer;
+  }
+
+  .regions button[aria-pressed='true'] {
+    color: var(--bg);
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .sort {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .sort select {
+    color: var(--ink);
+    border-radius: var(--radius-sm);
+  }
+
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .card[hidden] {
+    display: none;
+  }
+
+  /* The agency's own color across the top, its name set large on it. */
+  .brand {
+    --brand: color-mix(in oklab, var(--ink), var(--bg-raised) 88%);
+    --brand-ink: var(--ink);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-height: 7.5rem;
+    padding: var(--space-4);
+    padding-right: var(--space-12);
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+
+  .card[data-branded] .brand {
+    --brand: inherit;
+    --brand-ink: inherit;
+    background: var(--brand);
+    color: var(--brand-ink);
+  }
+
+  /* A small map behind each network: water, land, county lines. */
+  .art {
+    position: relative;
+    display: block;
+    aspect-ratio: 280 / 170;
+    background: light-dark(#d9e6ef, #142330);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+  }
+
+  .art .land {
+    fill: light-dark(#f4f1ea, #23222a);
+    stroke: light-dark(#c9d6df, #2b3a47);
+    stroke-width: 0.8;
+  }
+
+  .art .borders {
+    fill: none;
+    stroke: light-dark(#ddd6ca, #34313b);
+    stroke-width: 0.7;
+    stroke-dasharray: 2 2;
+  }
+
+  .art svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .art .network path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion='reduce']) .art svg {
+      transition: transform var(--duration) var(--ease-out);
+    }
+
+    :root:not([data-motion='reduce']) .art:hover svg {
+      transform: scale(1.04);
+    }
+  }
+
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-4) var(--space-4);
+    flex: 1;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: var(--step-1);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  h2 a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  h2 a:hover {
+    text-decoration: underline;
+  }
+
+  .body p,
+  .brand p {
+    margin: 0;
+  }
+
+  .also {
+    font-size: var(--step--1);
+  }
+
+  .modes {
+    display: flex;
+    gap: var(--space-1);
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: auto !important;
+  }
+
+  /* Mode icons in the brand's text color, on a faint disc of it. */
+  .mode {
+    display: inline-grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, currentColor 16%, transparent);
+  }
+
+  .mode svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: currentColor;
+  }
+
+  .region-tag {
+    margin-left: auto;
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .stats strong {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .live {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    margin-top: auto !important;
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--line);
+    flex: none;
+  }
+
+  [data-live='on'] {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  [data-live='on'] .dot {
+    background: var(--lime);
+  }
+
+  [data-live='error'] .dot {
+    background: var(--coral);
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    font-size: var(--step--1);
+    font-weight: 600;
+  }
+
+  .links a {
+    color: var(--accent-ink);
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .fine-print {
+    margin-top: var(--space-12);
+    font-size: var(--step--1);
+  }
+</style>

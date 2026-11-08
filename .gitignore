@@ -1,0 +1,20 @@
+# build output
+dist/
+.astro/
+.wrangler/
+
+# dependencies
+node_modules/
+
+# environment and secrets
+.env
+.env.*
+.dev.vars*
+!.env.example
+
+# logs and OS files
+npm-debug.log*
+.DS_Store
+
+# transit map build scratch (scripts/build-transit.ts)
+.transit-tmp/

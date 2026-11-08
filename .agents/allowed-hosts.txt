@@ -1,0 +1,9 @@
+# Outside hosts Kyle has approved for this project, one per line with a note.
+# The principles check reads this file. Ask Kyle before adding anything.
+
+# Map tiles, styles and fonts for the basemap (OpenFreeMap: free, no key, no tracking),
+# loaded by the browser at runtime. Approved by Kyle for the transit map only, 2026-11-08.
+tiles.openfreemap.org
+
+# Not loaded in the browser: the Worker (/transit/api/vehicles.json) and the weekly data
+# build fetch each agency's GTFS and GTFS-realtime feeds listed in src/lib/transit-feeds.ts.

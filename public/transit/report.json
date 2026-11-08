@@ -1,0 +1,620 @@
+{
+ "built": "2026-11-02T07:26:35.426Z",
+ "systems": {
+  "st": {
+   "ok": true,
+   "source": "https://gtfs.sound.obaweb.org/prod/40_gtfs.zip",
+   "agencies": [
+    "Sound Transit"
+   ],
+   "routes": 6,
+   "routesWithGeometry": 6,
+   "stops": 128,
+   "ms": 1210
+  },
+  "kcm": {
+   "ok": true,
+   "source": "https://gtfs.sound.obaweb.org/prod/1_gtfs.zip",
+   "agencies": [
+    "Metro Transit",
+    "City of Seattle",
+    "Sound Transit",
+    "Solid Ground EZ Loop"
+   ],
+   "routes": 142,
+   "routesWithGeometry": 142,
+   "stops": 6265,
+   "ms": 1867
+  },
+  "ct": {
+   "ok": true,
+   "source": "https://www.communitytransit.org/docs/default-source/open-data/gtfs/current.zip",
+   "agencies": [
+    "Community Transit",
+    "Sound Transit"
+   ],
+   "routes": 39,
+   "routesWithGeometry": 39,
+   "stops": 1713,
+   "ms": 1074
+  },
+  "pt": {
+   "ok": true,
+   "source": "https://gtfs.sound.obaweb.org/prod/3_gtfs.zip",
+   "agencies": [
+    "Pierce Transit",
+    "Sound Transit"
+   ],
+   "routes": 41,
+   "routesWithGeometry": 41,
+   "stops": 1974,
+   "ms": 704
+  },
+  "et": {
+   "ok": true,
+   "source": "https://everett.prod.mapstrat.com/current/google_transit.zip",
+   "agencies": [
+    "Everett Transit"
+   ],
+   "routes": 10,
+   "routesWithGeometry": 10,
+   "stops": 496,
+   "ms": 612
+  },
+  "wsf": {
+   "ok": true,
+   "source": "https://gtfs.sound.obaweb.org/prod/95_gtfs.zip",
+   "agencies": [
+    "Washington State Ferries"
+   ],
+   "routes": 38,
+   "routesWithGeometry": 38,
+   "stops": 19,
+   "ms": 288
+  },
+  "kt": {
+   "ok": true,
+   "source": "https://pride.kitsaptransit.com/gtfs/google_transit.zip",
+   "agencies": [
+    "Kitsap Transit"
+   ],
+   "routes": 77,
+   "routesWithGeometry": 77,
+   "stops": 1322,
+   "ms": 811
+  },
+  "it": {
+   "ok": true,
+   "source": "https://its.rideralerts.com/InfoPoint/gtfs-zip.ashx",
+   "agencies": [
+    "Intercity Transit"
+   ],
+   "routes": 30,
+   "routesWithGeometry": 30,
+   "stops": 1118,
+   "ms": 992
+  },
+  "pcf": {
+   "ok": true,
+   "source": "https://hbwest.connexionz.net/rtt/public/resource/gtfs.zip",
+   "agencies": [
+    "Pierce County Ferry"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 3,
+   "ms": 243
+  },
+  "it2": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/islandtransit-wa-us/islandtransit-wa-us.zip",
+   "agencies": [
+    "Island Transit"
+   ],
+   "routes": 16,
+   "routesWithGeometry": 16,
+   "stops": 447,
+   "ms": 335
+  },
+  "skt": {
+   "ok": true,
+   "source": "https://strweb.skagittransit.org/GTFS/google_transit.zip",
+   "agencies": [
+    "Skagit Transit"
+   ],
+   "routes": 19,
+   "routesWithGeometry": 19,
+   "stops": 479,
+   "ms": 670
+  },
+  "wta": {
+   "ok": true,
+   "source": "https://github.com/whatcomtrans/publicwtadata/raw/master/GTFS/wta_gtfs_latest.zip",
+   "agencies": [
+    "Whatcom Transportation Authority"
+   ],
+   "routes": 34,
+   "routesWithGeometry": 34,
+   "stops": 878,
+   "ms": 1126
+  },
+  "mason": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/mason-wa-us/mason-wa-us.zip",
+   "agencies": [
+    "Mason Transit Authority"
+   ],
+   "routes": 13,
+   "routesWithGeometry": 13,
+   "stops": 66,
+   "ms": 122
+  },
+  "jt": {
+   "ok": true,
+   "source": "http://mjcaction.com/MJC_GTFS_Public/jefferson_google_transit.zip",
+   "agencies": [
+    "Jefferson Transit Authority"
+   ],
+   "routes": 11,
+   "routesWithGeometry": 11,
+   "stops": 240,
+   "ms": 394
+  },
+  "clallam": {
+   "ok": true,
+   "source": "https://irp.cdn-website.com/0eaf265e/files/uploaded/clallam_transit_gtfs.zip",
+   "agencies": [
+    "Clallam Transit System"
+   ],
+   "routes": 17,
+   "routesWithGeometry": 17,
+   "stops": 334,
+   "ms": 701
+  },
+  "gh": {
+   "ok": true,
+   "source": "http://mjcaction.com/MJC_GTFS_Public/graysharbor_google_transit.zip",
+   "agencies": [
+    "Grays Harbor Transit"
+   ],
+   "routes": 14,
+   "routesWithGeometry": 14,
+   "stops": 344,
+   "ms": 164
+  },
+  "pacific": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/pacifictransit-wa-us/pacifictransit-wa-us.zip",
+   "agencies": [
+    "Pacific Transit"
+   ],
+   "routes": 7,
+   "routesWithGeometry": 7,
+   "stops": 43,
+   "ms": 95
+  },
+  "twin": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/twintransit-wa-us/twintransit-wa-us.zip",
+   "agencies": [
+    "Lewis County Transit"
+   ],
+   "routes": 9,
+   "routesWithGeometry": 9,
+   "stops": 106,
+   "ms": 61
+  },
+  "rural": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/thurston-wa-us/thurston-wa-us.zip",
+   "agencies": [
+    "ruralTRANSIT"
+   ],
+   "routes": 3,
+   "routesWithGeometry": 3,
+   "stops": 20,
+   "ms": 33
+  },
+  "svt": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/snoqualmie-wa-us/snoqualmie-wa-us.zip",
+   "agencies": [
+    "Snoqualmie Valley Transportation"
+   ],
+   "routes": 3,
+   "routesWithGeometry": 3,
+   "stops": 25,
+   "ms": 32
+  },
+  "bb": {
+   "ok": true,
+   "source": "http://mjcaction.com/MJC_GTFS_Public/blackball_google_transit.zip",
+   "agencies": [
+    "Black Ball / Coho Ferry Line"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 2,
+   "ms": 41
+  },
+  "guemes": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/guemesislandferry-wa-us/guemesislandferry-wa-us.zip",
+   "agencies": [
+    "Guemes Island Ferry"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 2,
+   "ms": 28
+  },
+  "lummif": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/lummiislandferry-wa-us/lummiislandferry-wa-us.zip",
+   "agencies": [
+    "Lummi Island Ferry"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 2,
+   "ms": 27
+  },
+  "lummi": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/lummitransit-wa-us/lummitransit-wa-us.zip",
+   "agencies": [
+    "Lummi Transit"
+   ],
+   "routes": 3,
+   "routesWithGeometry": 3,
+   "stops": 50,
+   "ms": 62
+  },
+  "muckleshoot": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/muckleshoot-wa-us/muckleshoot-wa-us.zip",
+   "agencies": [
+    "Muckleshoot Tribal Transit"
+   ],
+   "routes": 2,
+   "routesWithGeometry": 2,
+   "stops": 58,
+   "ms": 40
+  },
+  "nisqually": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/nisqually-wa-us/nisqually-wa-us.zip",
+   "agencies": [
+    "Nisqually Transit"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 7,
+   "ms": 26
+  },
+  "squaxin": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/squaxinisland-wa-us/squaxinisland-wa-us.zip",
+   "agencies": [
+    "Squaxin Island Transit"
+   ],
+   "routes": 3,
+   "routesWithGeometry": 3,
+   "stops": 6,
+   "ms": 29
+  },
+  "makah": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/makah-wa-us/makah-wa-us.zip",
+   "agencies": [
+    "Makah Public Transit"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 19,
+   "ms": 28
+  },
+  "elwha": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/elwhatransit-wa-us/elwhatransit-wa-us.zip",
+   "agencies": [
+    "Elwha Transit"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 9,
+   "ms": 27
+  },
+  "ctran": {
+   "ok": true,
+   "source": "https://www.c-tran.com/images/Google/GoogleTransitUpload.zip",
+   "agencies": [
+    "C-TRAN"
+   ],
+   "routes": 31,
+   "routesWithGeometry": 31,
+   "stops": 897,
+   "ms": 757
+  },
+  "rct": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/rivercitiestransit-wa-us/rivercitiestransit-wa-us.zip",
+   "agencies": [
+    "RiverCities Transit"
+   ],
+   "routes": 11,
+   "routesWithGeometry": 11,
+   "stops": 225,
+   "ms": 109
+  },
+  "skamania": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/skamaniacounty-wa-us/skamaniacounty-wa-us.zip",
+   "agencies": [
+    "Skamania County Transit"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 12,
+   "ms": 62
+  },
+  "lewis": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/lmht-morton-us/lmht-morton-us.zip",
+   "agencies": [
+    "L.E.W.I.S. Mountain Highway Transit"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 20,
+   "ms": 40
+  },
+  "mtadams": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/mountadams-wa-us/mountadams-wa-us.zip",
+   "agencies": [
+    "Mount Adams Transportation Service"
+   ],
+   "routes": 3,
+   "routesWithGeometry": 3,
+   "stops": 41,
+   "ms": 41
+  },
+  "wahkiakum": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/wahkiakumferry-wa-us/wahkiakumferry-wa-us.zip",
+   "agencies": [
+    "Wahkiakum Ferry"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 2,
+   "ms": 25
+  },
+  "sta": {
+   "ok": true,
+   "source": "https://www.spokanetransit.com/gtfs",
+   "agencies": [
+    "Spokane Transit Authority"
+   ],
+   "routes": 53,
+   "routesWithGeometry": 53,
+   "stops": 1669,
+   "ms": 2516
+  },
+  "bft": {
+   "ok": true,
+   "source": "https://myride.bft.org/Static/google_transit.zip",
+   "agencies": [
+    "BFT"
+   ],
+   "routes": 31,
+   "routesWithGeometry": 31,
+   "stops": 876,
+   "ms": 2028
+  },
+  "link": {
+   "ok": true,
+   "source": "https://link.rideralerts.com/InfoPoint/gtfs-zip.ashx",
+   "agencies": [
+    "LINK"
+   ],
+   "routes": 21,
+   "routesWithGeometry": 21,
+   "stops": 627,
+   "ms": 442
+  },
+  "yakima": {
+   "ok": true,
+   "source": "https://yakima.connexionz.net/rtt/public/utility/gtfs.aspx",
+   "agencies": [
+    "Yakima Transit"
+   ],
+   "routes": 9,
+   "routesWithGeometry": 9,
+   "stops": 507,
+   "ms": 547
+  },
+  "vt": {
+   "ok": true,
+   "source": "https://itransitnw.com/rtt/public/resource/gtfs.zip",
+   "agencies": [
+    "Valley Transit"
+   ],
+   "routes": 12,
+   "routesWithGeometry": 12,
+   "stops": 173,
+   "ms": 375
+  },
+  "pullman": {
+   "ok": true,
+   "source": "https://pullmanbusbeacon.com/gtfs",
+   "agencies": [
+    "Pullman Transit"
+   ],
+   "routes": 8,
+   "routesWithGeometry": 8,
+   "stops": 140,
+   "ms": 440
+  },
+  "ellensburg": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/ellensburg-wa-us/ellensburg-wa-us.zip",
+   "agencies": [
+    "Ellensburg Central Transit"
+   ],
+   "routes": 6,
+   "routesWithGeometry": 6,
+   "stops": 80,
+   "ms": 193
+  },
+  "grant": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/granttransit-wa-us/granttransit-wa-us.zip",
+   "agencies": [
+    "Grant Transit Authority"
+   ],
+   "routes": 11,
+   "routesWithGeometry": 11,
+   "stops": 204,
+   "ms": 60
+  },
+  "asotin": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/asotincounty-wa-us/asotincounty-wa-us.zip",
+   "agencies": [
+    "Lewiston Transit System",
+    "Asotin County PTBA"
+   ],
+   "routes": 8,
+   "routesWithGeometry": 8,
+   "stops": 109,
+   "ms": 36
+  },
+  "pfp": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/pfp-wa-us/pfp-wa-us.zip",
+   "agencies": [
+    "People for People"
+   ],
+   "routes": 11,
+   "routesWithGeometry": 11,
+   "stops": 62,
+   "ms": 80
+  },
+  "pahto": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/pahtopublicpassage-wa-us/pahtopublicpassage-wa-us.zip",
+   "agencies": [
+    "Pahto Public Passage"
+   ],
+   "routes": 3,
+   "routesWithGeometry": 3,
+   "stops": 33,
+   "ms": 47
+  },
+  "selah": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/selah-wa-us/selah-wa-us.zip",
+   "agencies": [
+    "Selah Transit"
+   ],
+   "routes": 2,
+   "routesWithGeometry": 2,
+   "stops": 32,
+   "ms": 30
+  },
+  "uniongap": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/uniongap-wa-us/uniongap-wa-us.zip",
+   "agencies": [
+    "Union Gap Transit"
+   ],
+   "routes": 2,
+   "routesWithGeometry": 2,
+   "stops": 14,
+   "ms": 28
+  },
+  "cct": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/ccttransit-wa-us/ccttransit-wa-us.zip",
+   "agencies": [
+    "Colville Confederated Tribes Transit"
+   ],
+   "routes": 3,
+   "routesWithGeometry": 3,
+   "stops": 17,
+   "ms": 33
+  },
+  "kaltran": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/kaltran-wa-us/kaltran-wa-us.zip",
+   "agencies": [
+    "Kaltran"
+   ],
+   "routes": 4,
+   "routesWithGeometry": 4,
+   "stops": 11,
+   "ms": 51
+  },
+  "moccasin": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/moccasinexpress-wa-us/moccasinexpress-wa-us.zip",
+   "agencies": [
+    "The Moccasin Express"
+   ],
+   "routes": 4,
+   "routesWithGeometry": 4,
+   "stops": 16,
+   "ms": 36
+  },
+  "trango": {
+   "ok": true,
+   "source": "https://rapid.nationalrtap.org/GTFSFileManagement/UserUploadFiles/5806/trango_gtfs.zip",
+   "agencies": [
+    "TranGO"
+   ],
+   "routes": 10,
+   "routesWithGeometry": 10,
+   "stops": 82,
+   "ms": 608
+  },
+  "octn": {
+   "ok": true,
+   "source": "https://business.wsdot.wa.gov/Transit/GTFS/OCTN/octn-wa-us.zip",
+   "agencies": [
+    "Okanogan County Transportation & Nutrition"
+   ],
+   "routes": 2,
+   "routesWithGeometry": 2,
+   "stops": 10,
+   "ms": 234
+  },
+  "lotl": {
+   "ok": true,
+   "source": "https://data.trilliumtransit.com/gtfs/lakechelan-wa-us/lakechelan-wa-us.zip",
+   "agencies": [
+    "Lady of the Lake"
+   ],
+   "routes": 1,
+   "routesWithGeometry": 1,
+   "stops": 5,
+   "ms": 25
+  },
+  "wsdot": {
+   "ok": true,
+   "source": "https://business.wsdot.wa.gov/Transit/csv_files/InterCityBus/WSDOT_GTFS_Intercity.zip",
+   "agencies": [
+    "Apple Line",
+    "Gold Line",
+    "Grape Line",
+    "Dungeness Line",
+    "Wheat Line"
+   ],
+   "routes": 5,
+   "routesWithGeometry": 5,
+   "stops": 71,
+   "ms": 410
+  }
+ }
+}
