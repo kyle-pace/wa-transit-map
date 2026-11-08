@@ -1,7 +1,7 @@
 ---
 // Live Washington transit map. Map: src/components/TransitMap.astro. Feeds:
 // src/lib/transit-feeds.ts. Routes and stops: scripts/build-transit.ts (weekly).
-import Base from '../../layouts/Base.astro';
+import DevLayout from 'kp-design/layouts/DevLayout.astro';
 import { StatusBadge } from 'kp-design';
 import TransitMap from '../../components/TransitMap.astro';
 import { systems } from '../../lib/transit-feeds';
@@ -15,7 +15,7 @@ const credits = systems.filter((s) => s.credit).map((s) => s.credit!);
 const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' });
 ---
 
-<Base
+<DevLayout
   title="Washington transit, live"
   description="Every bus, train and ferry in Washington that reports where it is, on one zoomable map, with every route and stop. Updated every 15 seconds."
   accent="sky"
@@ -81,7 +81,7 @@ const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'lon
     {credits.map((c) => <p>{c}</p>)}
     <p><a href="https://kylepace.dev/">More experiments</a></p>
   </div>
-</Base>
+</DevLayout>
 
 <style>
   .intro {

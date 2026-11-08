@@ -2,7 +2,7 @@
 // Every transit agency on the live map (/transit/), one card each, with its network
 // drawn from the same route data the map uses (public/transit/). Live vehicle
 // counts load from /transit/api/vehicles.json.
-import Base from '../../layouts/Base.astro';
+import DevLayout from 'kp-design/layouts/DevLayout.astro';
 import { StatusBadge } from 'kp-design';
 import { systems } from '../../lib/transit-feeds';
 import { ICONS, MODE_LABELS, type IconMode } from '../../components/transit-icons';
@@ -318,7 +318,7 @@ const totals = {
 };
 ---
 
-<Base
+<DevLayout
   title="Every transit agency in Washington"
   description={`All ${totals.agencies} transit agencies on Kyle Pace’s live Washington transit map, each with its network drawn from its published routes, and how many vehicles are out right now.`}
   accent="sky"
@@ -430,7 +430,7 @@ const totals = {
     Drawings come from each agency’s published GTFS schedule, one line per route. Live counts are vehicles reporting
     in the last 15 minutes. <a href="/transit/">Back to the live map</a>
   </p>
-</Base>
+</DevLayout>
 
 <script>
   const list = document.querySelector<HTMLElement>('[data-cards]')!;
