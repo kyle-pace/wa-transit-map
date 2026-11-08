@@ -14,7 +14,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.6",
     "astro": "^7.4.7",
-    "kp-design": "github:kyle-pace/kp-design#9941f78f8ccb2a1b695ea888e932afd12a353049",
+    "kp-design": "github:kyle-pace/kp-design#e7abbcee1b6e2b8191549fd6d6bd0ca3d7209052",
     "maplibre-gl": "^5.24.0"
   },
   "devDependencies": {
