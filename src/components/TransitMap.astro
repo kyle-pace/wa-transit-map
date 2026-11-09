@@ -190,7 +190,9 @@ const regions = [
     font-variant-numeric: tabular-nums;
   }
 
+  /* Its own line: Astro's HTML compression drops the space between the two spans. */
   .updated {
+    display: block;
     font-weight: 400;
     color: var(--plate-ink-muted);
   }
