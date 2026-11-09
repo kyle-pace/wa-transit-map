@@ -1,12 +1,14 @@
 ---
 // Live Washington transit map. Map: src/components/TransitMap.astro. Feeds:
 // src/lib/transit-feeds.ts. Routes and stops: scripts/build-transit.ts (weekly).
-import DevLayout from 'kp-design/layouts/DevLayout.astro';
-import { StatusBadge } from 'kp-design';
+// A standalone lab, not a page of kylepace.dev: LabLayout gives it only the back link,
+// a footer line, display settings and analytics. Its look is src/styles/theme.css
+// (plan: design/PLAN.md).
+import LabLayout from 'kp-design/layouts/LabLayout.astro';
+import '../../styles/theme.css';
 import TransitMap from '../../components/TransitMap.astro';
 import { systems } from '../../lib/transit-feeds';
 import meta from '../../../public/transit/meta.json';
-
 
 const withData = new Set(meta.systems.filter((_, i) => meta.agencies.some(([s]) => s === i)).map((s) => s.key));
 const liveSystems = systems.filter((s) => s.live).sort((a, b) => a.name.localeCompare(b.name));
@@ -15,191 +17,186 @@ const credits = systems.filter((s) => s.credit).map((s) => s.credit!);
 const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' });
 ---
 
-<DevLayout
+<LabLayout
   title="Washington transit, live"
   description="Every bus, train and ferry in Washington that reports where it is, on one zoomable map, with every route and stop. Updated every 15 seconds."
-  accent="sky"
   image="/transit/share.png"
-  imageAlt="Washington transit, live: a dark map of Puget Sound's transit routes in many colors, dotted with vehicles."
+  imageAlt="Washington transit: the name on a green sign beside a dark map of Puget Sound's transit routes in many colors, dotted with vehicles."
+  themeColor={{ light: '#eceee8', dark: '#121719' }}
 >
-  <header class="intro">
-    <p class="eyebrow"><a href="https://kylepace.dev/labs/">Labs</a> <StatusBadge status="in-progress" /></p>
-    <h1>Washington transit, live.</h1>
-    <p class="lede prose">
-      Every bus, train and ferry in the state that reports where it is, on one map. {liveSystems.length} agencies
-      share live positions, and {withData.size} publish their routes and stops. Zoom in,
-      search for a route, or tap a vehicle to see where it’s headed.
-    </p>
-  </header>
+  <ul class="lab-nav" slot="bar">
+    <li><a href="/transit/" aria-current="page">Live map</a></li>
+    <li><a href="/transit/agencies/">Agencies</a></li>
+    <li><a href="#about">About</a></li>
+  </ul>
 
   <TransitMap />
 
-  <section class="systems" aria-labelledby="systems-heading">
-    <div class="systems-head">
+  <div class="below">
+    <section class="systems" aria-labelledby="systems-heading">
       <h2 id="systems-heading">Who’s on the map</h2>
-      <a class="meet" href="/transit/agencies/">Meet all {withData.size} agencies →</a>
-    </div>
-    <div class="columns">
-      <div>
-        <h3>Live positions</h3>
-        <ul class="system-list">
-          {
-            liveSystems.map((s) => (
-              <li data-system={s.key} data-state="loading">
-                <span class="dot" aria-hidden="true" />
-                <span class="name">{s.name}</span>
-                <span class="count" data-count>
-                  …
-                </span>
-              </li>
-            ))
-          }
-        </ul>
+      <div class="columns">
+        <div>
+          <table class="timetable">
+            <caption>Live positions</caption>
+            <thead>
+              <tr>
+                <th scope="col">Agency</th>
+                <th scope="col" class="num">Moving now</th>
+              </tr>
+            </thead>
+            <tbody>
+              {
+                liveSystems.map((s) => (
+                  <tr data-system={s.key} data-state="loading">
+                    <th scope="row">{s.name}</th>
+                    <td class="num" data-count>
+                      …
+                    </td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3>Routes and stops only</h3>
+          <p class="note">These agencies publish their schedules but not where their vehicles are, so the map shows their routes and stops without vehicles.</p>
+          <ul class="names">
+            {scheduleSystems.map((s) => <li>{s.name}</li>)}
+          </ul>
+          <p><a href="/transit/agencies/">See every agency’s network</a></p>
+        </div>
       </div>
-      <div>
-        <h3>Routes and stops</h3>
-        <p class="muted small">These agencies publish schedules but not live locations, so their routes and stops are drawn without vehicles.</p>
-        <ul class="system-list compact">
-          {scheduleSystems.map((s) => <li>{s.name}</li>)}
-        </ul>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <div class="fine-print prose muted">
-    <p>
-      Live positions come from each agency’s open GTFS-realtime feed and refresh every 15 seconds. Routes and stops
-      come from their published GTFS schedules, last rebuilt {updated}. Feeds found through the
-      <a href="https://mobilitydatabase.org">Mobility Database</a> and <a href="https://www.transit.land">Transitland</a>.
-      Map tiles by <a href="https://openfreemap.org">OpenFreeMap</a>, map data © OpenStreetMap contributors.
-    </p>
-    <p>
-      Privacy: your browser asks OpenFreeMap’s servers for the part of the map you’re looking at. If you use “Find my
-      location”, your position stays in your browser. Analytics works the same as the rest of kylepace.dev
-      (<a href="https://kylepace.dev/privacy/">privacy</a>).
-    </p>
-    {credits.map((c) => <p>{c}</p>)}
-    <p><a href="https://kylepace.dev/labs/">More labs</a></p>
+    <section class="about" id="about" aria-labelledby="about-heading">
+      <h2 id="about-heading">About</h2>
+      <p>
+        This map shows every bus, train and ferry in Washington that reports where it is, with every route and stop
+        around it. Tap a vehicle to see its route and where it’s headed, or search for a route or an agency.
+      </p>
+      <p>
+        Vehicle positions come from each agency’s open live feed (GTFS-realtime) and refresh every 15 seconds. Routes and
+        stops come from the schedules the agencies publish (GTFS), rebuilt every week; the last rebuild was {updated}.
+        Feeds found through the <a href="https://mobilitydatabase.org">Mobility Database</a> and
+        <a href="https://www.transit.land">Transitland</a>. Map tiles by <a href="https://openfreemap.org">OpenFreeMap</a>,
+        map data © OpenStreetMap contributors.
+      </p>
+      <p>
+        Privacy: your browser asks OpenFreeMap’s servers for the part of the map you’re looking at. If you use “Find my
+        location”, your position stays in your browser. Analytics works the same as the rest of kylepace.dev
+        (<a href="https://kylepace.dev/privacy/">privacy</a>).
+      </p>
+      {credits.map((c) => <p>{c}</p>)}
+    </section>
   </div>
-</DevLayout>
+</LabLayout>
 
 <style>
-  .intro {
-    padding-bottom: var(--space-6);
+  .below {
+    padding: var(--space-8) var(--gutter) 0;
+    max-width: 68rem;
   }
 
-  .intro h1 {
-    max-width: 18ch;
+  h2 {
+    margin: 0 0 var(--space-4);
+    font-size: var(--step-2);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
   }
 
-  .eyebrow {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-  }
-
-  .eyebrow a {
-    color: inherit;
-  }
-
-  .lede {
-    font-size: var(--step-1);
-    color: var(--ink-muted);
-  }
-
-  .systems {
-    margin-top: var(--space-12);
-  }
-
-  .systems-head {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-6);
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: var(--space-4);
-  }
-
-  .systems-head h2 {
-    margin: 0;
-  }
-
-  .meet {
+  h3,
+  caption {
+    margin: 0 0 var(--space-2);
+    font-size: var(--step-0);
     font-weight: 700;
-    color: var(--accent-ink);
+    text-align: left;
   }
 
   .columns {
     display: grid;
-    gap: var(--space-8);
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: var(--space-8) var(--space-12);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   }
 
-  h3 {
-    font-size: var(--step-0);
-    margin: 0 0 var(--space-3);
-  }
-
-  .small {
-    font-size: var(--step--1);
-    margin: 0 0 var(--space-3);
-  }
-
-  .system-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  /* A timetable: a heavy rule on top, light rules between rows, figures right-aligned. */
+  .timetable {
+    width: 100%;
+    border-collapse: collapse;
     font-size: var(--step--1);
   }
 
-  .system-list li {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
+  .timetable thead th {
+    padding: var(--space-1) 0;
+    border-top: 3px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    color: var(--ink-muted);
+    font-weight: 400;
+    text-align: left;
+  }
+
+  .timetable tbody th,
+  .timetable td {
     padding: var(--space-2) 0;
     border-bottom: 1px solid var(--line);
+    text-align: left;
+    font-weight: 600;
   }
 
-  .system-list.compact {
-    columns: 2 12rem;
-    column-gap: var(--space-6);
-  }
-
-  .system-list.compact li {
-    break-inside: avoid;
-  }
-
-  .name {
-    flex: 1;
-  }
-
-  .count {
-    color: var(--ink-muted);
+  .timetable .num,
+  .timetable thead th.num {
+    text-align: right;
+    padding-left: var(--space-4);
     font-variant-numeric: tabular-nums;
   }
 
-  .dot {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: var(--line);
-    flex: none;
+  .timetable td.num {
+    font-weight: 700;
   }
 
-  [data-state='live'] .dot {
-    background: var(--lime);
+  /* Not running or not answering: say so, in the quieter ink. */
+  [data-state='quiet'] td,
+  [data-state='loading'] td,
+  [data-state='error'] td {
+    font-weight: 400;
+    color: var(--ink-muted);
   }
 
-  [data-state='live'] .count {
-    color: var(--ink);
-  }
-
-  [data-state='error'] .dot {
-    background: var(--coral);
-  }
-
-  .fine-print {
-    margin-top: var(--space-12);
+  .note {
+    margin: 0 0 var(--space-3);
+    max-width: 38rem;
     font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .names {
+    margin: 0 0 var(--space-4);
+    padding: var(--space-2) 0 0;
+    border-top: 3px solid var(--ink);
+    list-style: none;
+    columns: 2 11rem;
+    column-gap: var(--space-6);
+    font-size: var(--step--1);
+  }
+
+  .names li {
+    padding: var(--space-1) 0;
+    break-inside: avoid;
+  }
+
+  .about {
+    margin-top: var(--space-12);
+    max-width: 40rem;
+    font-size: var(--step--1);
+  }
+
+  .about h2 {
+    font-size: var(--step-1);
+    margin-bottom: var(--space-2);
+  }
+
+  .about p {
+    margin: 0 0 var(--space-3);
   }
 </style>

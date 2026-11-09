@@ -1,17 +1,21 @@
 ---
 // The live Washington transit map (/transit/). Logic: ./transit-map.ts. Data:
 // public/transit/ (routes and stops, weekly) and /transit/api/vehicles.json (live).
+// The look (design/PLAN.md): the map fills the window, and one sign is mounted on it
+// with the page's name, the live readout and the legend. On phones the sign sits above
+// the map instead, with the legend folded away.
 import { systems } from '../lib/transit-feeds';
 import { ICONS, type IconMode } from './transit-icons';
 
 const routesFrom = JSON.stringify(systems.filter((s) => s.routesFrom).map((s) => [s.key, s.routesFrom]));
 const shops = JSON.stringify(systems.filter((s) => s.shop).map((s) => [s.key, s.shop]));
 
-const modes: { value: IconMode; label: string }[] = [
-  { value: 'bus', label: 'Buses' },
-  { value: 'tram', label: 'Light rail & streetcars' },
-  { value: 'rail', label: 'Trains' },
-  { value: 'ferry', label: 'Ferries' },
+// `bold`: drawn with the thick line on the map (transit-map.ts), so the legend shows it that way.
+const modes: { value: IconMode; label: string; bold: boolean }[] = [
+  { value: 'bus', label: 'Buses', bold: false },
+  { value: 'tram', label: 'Light rail and streetcars', bold: true },
+  { value: 'rail', label: 'Trains', bold: true },
+  { value: 'ferry', label: 'Ferries', bold: true },
 ];
 const regions = [
   ['puget', 'Puget Sound'],
@@ -25,14 +29,26 @@ const regions = [
 ];
 ---
 
-<section class="transit" id="transit-map" data-routes-from={routesFrom} data-shops={shops}>
+<section class="transit" id="transit-map" data-routes-from={routesFrom} data-shops={shops} aria-labelledby="transit-title">
   <div class="frame" data-frame>
-    <div class="toolbar">
-      <div class="find">
-        <label class="search">
-          <span class="visually-hidden">Find a route or agency</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.25 4.24-1.42 1.42-4.24-4.25A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" /></svg>
+    <div class="sign">
+      <div class="plate sign-plate">
+        <h1 id="transit-title">Washington transit</h1>
+        <p class="readout">
+          <span data-status aria-live="polite">Loading the map…</span>
+          <span class="updated" data-updated></span>
+        </p>
+      </div>
+
+      <div class="sign-body">
+        <div class="search">
+          <label class="visually-hidden" for="tm-search">Find a route or agency</label>
+          <svg viewBox="0 0 24 24" aria-hidden="true"
+            ><path d="M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.25 4.24-1.42 1.42-4.24-4.25A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"
+            ></path></svg
+          >
           <input
+            id="tm-search"
             type="search"
             data-search
             placeholder="Find a route or agency"
@@ -42,53 +58,78 @@ const regions = [
             aria-controls="tm-results"
             aria-expanded="false"
           />
-          <ul id="tm-results" class="results" data-results role="listbox" hidden></ul>
-        </label>
-        <p class="focus" data-focus hidden>
-          Showing <strong data-focus-name></strong>
-          <a data-focus-site hidden target="_blank" rel="noopener">Website ↗</a>
-          <a data-focus-shop hidden target="_blank" rel="noopener">Merch shop ↗</a>
-          <button type="button">Show everyone</button>
-        </p>
-      </div>
-      <fieldset class="toggles">
-        <legend class="visually-hidden">Show</legend>
-        {
-          modes.map((m) => (
-            <label class="toggle" data-mode={m.value}>
-              <input type="checkbox" name="mode" value={m.value} checked />
-              <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d={ICONS[m.value]} fill-rule="evenodd" />
-              </svg>
-              {m.label}
+          <ul id="tm-results" class="results" data-results role="listbox" aria-label="Routes and agencies" hidden></ul>
+        </div>
+
+        <div class="focus" data-focus hidden>
+          <p>Showing <strong data-focus-name></strong></p>
+          <p class="focus-links">
+            <a data-focus-site hidden target="_blank" rel="noopener"
+              >Website<span class="visually-hidden"> (opens in a new tab)</span></a
+            >
+            <a data-focus-shop hidden target="_blank" rel="noopener"
+              >Merch shop<span class="visually-hidden"> (opens in a new tab)</span></a
+            >
+            <button type="button">Show every agency</button>
+          </p>
+        </div>
+
+        <details class="layers" data-layers open>
+          <summary>
+            <span>Layers and places</span>
+            <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </summary>
+          <div class="layers-body">
+            <fieldset class="legend">
+              <legend>Show</legend>
+              {
+                modes.map((m) => (
+                  <label class="row">
+                    <input type="checkbox" name="mode" value={m.value} checked />
+                    <svg class="pictogram" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d={ICONS[m.value]} fill-rule="evenodd" />
+                    </svg>
+                    <span class="row-label">{m.label}</span>
+                    <svg class:list={['stroke', { bold: m.bold }]} viewBox="0 0 40 12" aria-hidden="true">
+                      <path d="M2 6h36" />
+                    </svg>
+                  </label>
+                ))
+              }
+            </fieldset>
+            <fieldset class="legend">
+              <legend>On the map</legend>
+              <label class="row">
+                <input type="checkbox" name="layer" value="routes" checked />
+                <span class="row-label">Routes</span>
+              </label>
+              <label class="row">
+                <input type="checkbox" name="layer" value="stops" checked />
+                <span class="row-label">Stops and stations</span>
+              </label>
+              <label class="row">
+                <input type="checkbox" name="layer" value="official" />
+                <span class="row-label">Agencies’ own route colors</span>
+              </label>
+            </fieldset>
+            <label class="jump">
+              <span>Jump to</span>
+              <select data-region>
+                {regions.map(([value, label]) => <option value={value}>{label}</option>)}
+              </select>
             </label>
-          ))
-        }
-        <span class="divider" aria-hidden="true"></span>
-        <label class="toggle plain">
-          <input type="checkbox" name="layer" value="routes" checked />
-          Routes
-        </label>
-        <label class="toggle plain">
-          <input type="checkbox" name="layer" value="stops" checked />
-          Stops
-        </label>
-        <label class="toggle plain">
-          <input type="checkbox" name="layer" value="official" />
-          Official colors
-        </label>
-      </fieldset>
-      <label class="region">
-        <span class="visually-hidden">Jump to</span>
-        <select data-region>
-          {regions.map(([value, label]) => <option value={value}>{label}</option>)}
-        </select>
-      </label>
+          </div>
+        </details>
+      </div>
     </div>
     <div class="map" data-map role="region" aria-label="Map of live transit vehicles in Washington"></div>
-    <p class="status" data-status aria-live="polite">Loading the map…</p>
   </div>
 </section>
+
+<script is:inline>
+  // On phones the legend starts folded, so the map keeps the screen.
+  if (matchMedia('(max-width: 47.99rem)').matches) document.querySelector('[data-layers]')?.removeAttribute('open');
+</script>
 
 <script>
   import { startTransitMap } from './transit-map';
@@ -98,68 +139,103 @@ const regions = [
 </script>
 
 <style>
-  .transit {
-    /* Full-bleed: the map is the page. */
-    width: 100vw;
-    margin-inline: calc(50% - 50vw);
-  }
+  /* ---------- The stage: the map fills the window under the back bar ---------- */
 
   .frame {
+    position: relative;
     display: flex;
     flex-direction: column;
-    background: var(--bg);
+    /* A strip of the timetable stays in view below, so it's clear the page goes on. */
+    height: calc(100dvh - var(--bar-h) - 3rem);
+    min-height: 32rem;
+    background: var(--sound);
   }
 
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    align-items: center;
-    justify-content: space-between;
-    width: min(100% - 2 * var(--space-6), var(--wide));
-    margin-inline: auto;
-    padding-block: var(--space-3);
+  .frame:fullscreen {
+    height: 100vh;
   }
 
-  .find {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
-    align-items: center;
-    flex-basis: 100%;
+  .map {
+    flex: 1;
+    min-height: 0;
+    background: var(--sound);
   }
+
+  /* ---------- The sign ---------- */
+
+  .sign {
+    position: relative;
+    z-index: 3;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sign-plate {
+    padding: var(--space-3) var(--gutter);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .readout {
+    margin: var(--space-1) 0 0;
+    font-size: var(--step--1);
+    font-weight: 600;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .updated {
+    font-weight: 400;
+    color: var(--plate-ink-muted);
+  }
+
+  .sign-body {
+    padding: var(--space-3) var(--gutter);
+  }
+
+  /* ---------- Search ---------- */
 
   .search {
     position: relative;
     display: flex;
     align-items: center;
-    flex: 1 1 18rem;
-    max-width: 28rem;
   }
 
   .search svg {
     position: absolute;
     left: var(--space-3);
-    width: 1.1rem;
-    height: 1.1rem;
+    width: 1.15rem;
+    height: 1.15rem;
     fill: var(--ink-muted);
     pointer-events: none;
   }
 
   .search input {
     width: 100%;
+    min-height: 2.75rem;
     font: inherit;
-    font-size: var(--step--1);
+    font-size: var(--step-0);
     color: var(--ink);
-    background: var(--bg-raised);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: var(--space-2) var(--space-4) var(--space-2) calc(var(--space-3) + 1.5rem);
+    background: var(--bg);
+    border: 1px solid var(--control-line);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) + 1.6rem);
+  }
+
+  .search input::placeholder {
+    color: var(--ink-muted);
+    opacity: 1;
   }
 
   .search input:focus-visible {
-    outline: 2px solid var(--accent-ink);
-    outline-offset: 2px;
+    outline: 3px solid var(--accent-ink);
+    outline-offset: 1px;
   }
 
   .results {
@@ -169,28 +245,35 @@ const regions = [
     left: 0;
     right: 0;
     margin: 0;
-    padding: var(--space-1);
+    padding: 0;
     list-style: none;
     background: var(--bg-raised);
-    border: 1px solid var(--line);
+    border: 1px solid var(--control-line);
     border-radius: var(--radius-sm);
-    box-shadow: 0 8px 28px rgb(0 0 0 / 0.16);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
     font-size: var(--step--1);
+    overflow: hidden;
   }
 
   .results :global(li) {
     display: flex;
-    gap: var(--space-1) var(--space-2);
+    gap: 0 var(--space-2);
     align-items: baseline;
     flex-wrap: wrap;
-    padding: var(--space-2);
-    border-radius: 0.4rem;
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--line);
     cursor: pointer;
   }
 
+  .results :global(li:first-child) {
+    border-top: 0;
+  }
+
+  /* The highlighted result: a bar of Guide green on its left edge, like the row you're reading on a timetable. */
   .results :global(li.active),
   .results :global(li:hover) {
-    background: color-mix(in oklab, var(--ink), transparent 92%);
+    background: var(--bg);
+    box-shadow: inset 4px 0 0 var(--plate);
   }
 
   .results :global(.tm-result-label) {
@@ -203,172 +286,281 @@ const regions = [
     flex-basis: 100%;
   }
 
+  /* ---------- Focused on one agency ---------- */
+
   .focus {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-    flex-wrap: wrap;
-    margin: 0;
-    padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+    margin-top: var(--space-3);
+    padding: var(--space-1) 0 var(--space-1) var(--space-3);
+    border-left: 4px solid var(--plate);
     font-size: var(--step--1);
-    background: color-mix(in oklab, var(--accent), var(--bg-raised) 85%);
-    border: 1px solid color-mix(in oklab, var(--accent), transparent 50%);
-    border-radius: 999px;
   }
 
   .focus[hidden] {
     display: none;
   }
 
-  .focus a {
-    color: var(--accent-ink);
-    font-weight: 600;
+  .focus p {
+    margin: 0;
   }
 
-  .focus button {
+  .focus-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-4);
+    align-items: center;
+  }
+
+  .focus-links a,
+  .focus-links button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
     font: inherit;
     font-weight: 600;
-    color: var(--ink);
-    background: var(--bg-raised);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 0.15rem var(--space-3);
+    color: var(--accent-ink);
+  }
+
+  .focus-links [hidden] {
+    display: none;
+  }
+
+  .focus-links button {
+    padding: 0;
+    background: none;
+    border: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
     cursor: pointer;
   }
 
-  .toggles {
+  /* ---------- The legend ---------- */
+
+  .layers {
+    margin-top: var(--space-2);
+  }
+
+  summary {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
     align-items: center;
-    margin: 0;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--ink-muted);
+  }
+
+  .layers[open] .chevron {
+    rotate: 180deg;
+  }
+
+  .legend {
+    margin: 0 0 var(--space-3);
     padding: 0;
     border: 0;
   }
 
-  .toggle {
-    display: inline-flex;
-    gap: var(--space-2);
-    align-items: center;
-    padding: var(--space-1) var(--space-3);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--bg-raised);
+  legend {
+    padding: 0;
+    margin-bottom: var(--space-1);
+    font-size: var(--step--1);
     color: var(--ink-muted);
+  }
+
+  .row {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+    min-height: 2.5rem;
+    border-top: 1px solid var(--line);
     font-size: var(--step--1);
     font-weight: 600;
     cursor: pointer;
-    user-select: none;
   }
 
-  .toggle input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
+  .row:last-of-type {
+    border-bottom: 1px solid var(--line);
   }
 
-  .toggle:has(input:checked) {
-    color: var(--ink);
-    border-color: color-mix(in oklab, var(--ink), transparent 70%);
+  .row input {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    flex: none;
+    accent-color: var(--plate);
+    cursor: pointer;
   }
 
-  .toggle:has(input:focus-visible) {
-    outline: 2px solid var(--accent-ink);
-    outline-offset: 2px;
+  .row-label {
+    flex: 1;
   }
 
-  /* Mode icon in a disc: outlined when off, filled with the mode color when on. */
-  .mode-icon {
-    width: 1.35rem;
-    height: 1.35rem;
-    margin-left: calc(-1 * var(--space-2));
-    padding: 0.2rem;
-    border-radius: 50%;
-    border: 1.5px solid var(--c);
-    fill: var(--c);
+  .pictogram {
+    width: 1.3rem;
+    height: 1.3rem;
+    fill: var(--ink);
     flex: none;
   }
 
-  .toggle:has(input:checked) .mode-icon {
-    background: var(--c);
-    fill: #fff;
-  }
-
-  [data-mode='bus'] { --c: #2f6fdf; }
-  [data-mode='tram'] { --c: #0c8a6a; }
-  [data-mode='rail'] { --c: #7048e8; }
-  [data-mode='ferry'] { --c: #1098ad; }
-
-  .toggle.plain::before {
-    content: '';
-    width: 0.75rem;
+  /* The line as the map draws it: buses thin, rail and ferries bold. */
+  .stroke {
+    width: 2.5rem;
     height: 0.75rem;
-    border-radius: 0.2rem;
-    border: 2px solid var(--ink-muted);
+    flex: none;
+    stroke: var(--ink);
+    stroke-width: 2;
+    stroke-linecap: round;
   }
 
-  .toggle.plain:has(input:checked)::before {
-    background: var(--ink-muted);
-    box-shadow: inset 0 0 0 2px var(--bg-raised);
+  .stroke.bold {
+    stroke-width: 5;
   }
 
-  .divider {
-    width: 1px;
-    height: 1.25rem;
-    background: var(--line);
+  /* Hidden modes fade on the legend too. */
+  .row:has(input:not(:checked)) :is(.pictogram, .stroke) {
+    opacity: 0.35;
   }
 
-  .region select {
-    font: inherit;
+  .jump {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
     font-size: var(--step--1);
     font-weight: 600;
-    color: var(--ink);
-    background: var(--bg-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: var(--space-1) var(--space-3);
   }
 
-  .map {
-    height: clamp(26rem, 76vh, 58rem);
-    border-block: 1px solid var(--line);
-    background: color-mix(in oklab, var(--ink), var(--bg) 94%);
-  }
-
-  .status {
-    width: min(100% - 2 * var(--space-6), var(--wide));
-    margin: var(--space-2) auto 0;
-    font-size: var(--step--1);
-    color: var(--ink-muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Fullscreen: toolbar on top, map fills the rest. */
-  .frame:fullscreen {
-    height: 100vh;
-  }
-
-  .frame:fullscreen .map {
+  .jump select {
     flex: 1;
-    height: auto;
+    min-height: 2.5rem;
+    font: inherit;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--control-line);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-2);
   }
 
-  .frame:fullscreen .status {
-    margin-bottom: var(--space-2);
+  /* ---------- Phones: the sign above the map, the legend dropping over it ---------- */
+
+  @media (max-width: 47.99rem) {
+    .frame {
+      height: calc(100dvh - var(--bar-h) - 2.5rem);
+      min-height: 30rem;
+    }
+
+    .sign-body {
+      position: relative;
+      padding-bottom: 0;
+    }
+
+    .layers {
+      margin-top: var(--space-1);
+    }
+
+    .layers-body {
+      position: absolute;
+      z-index: 4;
+      left: 0;
+      right: 0;
+      top: 100%;
+      max-height: 60vh;
+      overflow: auto;
+      padding: var(--space-3) var(--gutter) var(--space-2);
+      background: var(--bg-raised);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 12px 24px rgb(0 0 0 / 0.18);
+    }
   }
 
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  /* ---------- Wider screens: the sign mounted on the map ---------- */
+
+  @media (min-width: 48rem) {
+    .sign {
+      position: absolute;
+      top: var(--space-4);
+      left: var(--space-4);
+      width: 21rem;
+      max-height: calc(100% - 2 * var(--space-4) - 1.5rem);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 28px rgb(0 0 0 / 0.2);
+    }
+
+    .sign-plate {
+      padding: var(--space-4) var(--space-4) var(--space-3);
+      border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+    }
+
+    h1 {
+      font-size: var(--step-2);
+    }
+
+    .sign-body {
+      padding: var(--space-3) var(--space-4) var(--space-2);
+    }
   }
 
-  /* MapLibre's popups and controls, in the site's type and colors. */
+  /* ---------- MapLibre's controls and popups, in the sign's colors ---------- */
+
   .transit :global(.maplibregl-map) {
     font: inherit;
+  }
+
+  .transit :global(.maplibregl-ctrl-group) {
+    background: var(--bg-raised);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px var(--control-line);
+  }
+
+  .transit :global(.maplibregl-ctrl-group button) {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .transit :global(.maplibregl-ctrl-group button + button) {
+    border-top-color: var(--line);
+  }
+
+  .transit :global(.maplibregl-ctrl button:focus-visible) {
+    outline: 3px solid var(--accent-ink);
+    outline-offset: 1px;
+    box-shadow: none;
+  }
+
+  /* The control icons are dark drawings; flip them for dark mode. */
+  :global(:root[data-theme='dark']) .transit :global(.maplibregl-ctrl-icon) {
+    filter: invert(1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .transit :global(.maplibregl-ctrl-icon) {
+      filter: invert(1);
+    }
+  }
+
+  /* Keep the credits clear of the display settings button in the bottom-right corner. */
+  .transit :global(.maplibregl-ctrl-bottom-left) {
+    max-width: calc(100% - 5rem);
+  }
+
+  .transit :global(.maplibregl-ctrl-attrib) {
+    background: color-mix(in oklab, var(--bg-raised), transparent 10%);
+    color: var(--ink);
+  }
+
+  .transit :global(.maplibregl-ctrl-attrib a) {
+    color: var(--ink);
   }
 
   .transit :global(.tm-popup .maplibregl-popup-content) {
@@ -376,8 +568,8 @@ const regions = [
     padding-right: var(--space-8);
     background: var(--bg-raised);
     color: var(--ink);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+    border-radius: var(--radius);
+    box-shadow: 0 6px 24px rgb(0 0 0 / 0.22);
     font-family: var(--font-text);
     font-size: var(--step--1);
     line-height: 1.4;
@@ -400,11 +592,12 @@ const regions = [
     color: var(--ink-muted);
   }
 
+  /* Route numbers on a plate in the route's color, the way they're shown at stops. */
   .transit :global(.tm-chip) {
     display: inline-block;
     min-width: 1.6em;
     padding: 0 0.4em;
-    border-radius: 0.3em;
+    border-radius: 3px;
     font-weight: 700;
     text-align: center;
     margin: 0 0.2em 0.2em 0;
@@ -422,7 +615,7 @@ const regions = [
     height: 1.3em;
     padding: 0.12em;
     border: 1.5px solid currentColor;
-    border-radius: 0.3em;
+    border-radius: 3px;
   }
 
   .transit :global(.tm-link) {
@@ -441,7 +634,7 @@ const regions = [
     margin: var(--space-2) calc(-1 * var(--space-2)) var(--space-2);
     padding: var(--space-2);
     border-radius: var(--radius-sm);
-    background: light-dark(#eef3f6, #232a31);
+    background: var(--bg);
   }
 
   .transit :global(.tm-vehicle-art) {
@@ -481,7 +674,8 @@ const regions = [
   .transit :global(.maplibregl-popup-close-button) {
     color: var(--ink-muted);
     font-size: 1.25rem;
-    padding: var(--space-1) var(--space-2);
+    min-width: 2.25rem;
+    min-height: 2.25rem;
   }
 
   .transit :global(.maplibregl-popup-anchor-bottom .maplibregl-popup-tip) {

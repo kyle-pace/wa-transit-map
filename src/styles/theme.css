@@ -1,0 +1,87 @@
+/*
+  Washington transit's own look (design/PLAN.md). It's a standalone lab (kp-design's
+  LabLayout), so it takes kp-design's tokens and makes them its own: the map's land and
+  water (Shore and Sound) as the page, and the green of Washington's guide and ferry
+  signs for the one plate that names the page. Agency and route colors are the only
+  other color. Every text pair meets WCAG AA (4.5:1) in light and dark; control
+  borders meet 3:1.
+*/
+:root {
+  /* Shore: the page, and the map's land (transit-map.ts retints the basemap to match). */
+  --bg: light-dark(#eceee8, #121719);
+  /* Panel: the body of the sign, menus and popups. */
+  --bg-raised: light-dark(#f9faf7, #1b2225);
+  --ink: light-dark(#0f1a1d, #e4ebed);
+  --ink-muted: light-dark(#46545a, #9badb3);
+  --line: light-dark(#c7cfcf, #2f3a3e);
+  /* Borders of controls people use (checkboxes, fields): 3:1 against the panel. */
+  --control-line: light-dark(#7b888c, #6b7a80);
+  /* Sound: the map's water. */
+  --sound: light-dark(#b3cad2, #1a3440);
+  /* Guide green: the sign plate, always with white text. */
+  --plate: light-dark(#0b5a47, #0e6651);
+  --plate-ink: #ffffff;
+  --plate-ink-muted: light-dark(#d5ebe2, #d5ebe2);
+  --accent: var(--plate);
+  --accent-ink: light-dark(#0b5a47, #6fd0ad);
+  --radius: 6px;
+  --radius-sm: 4px;
+  /* The back bar's height (LabLayout: a 2.75rem link plus padding), so the map can fill
+     the rest of the window. */
+  --bar-h: 4.25rem;
+}
+
+:root[data-contrast='more'] {
+  --control-line: var(--ink);
+}
+
+@media (prefers-contrast: more) {
+  :root:not([data-contrast='default']) {
+    --control-line: var(--ink);
+  }
+}
+
+/* The two pages, as plain wayfinding links in the back bar. */
+.lab-nav {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.lab-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding-inline: var(--space-2);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.lab-nav a:hover {
+  color: var(--ink);
+}
+
+/* The current page: ink, with a rule under it like a selected tab. */
+.lab-nav a[aria-current='page'] {
+  color: var(--ink);
+  box-shadow: inset 0 -3px 0 var(--plate);
+}
+
+/* The sign: Guide green with white type. Used for each page's title. */
+.plate {
+  background: var(--plate);
+  color: var(--plate-ink);
+}
+
+.plate a {
+  color: inherit;
+}
+
+.plate :focus-visible {
+  outline-color: var(--plate-ink);
+}

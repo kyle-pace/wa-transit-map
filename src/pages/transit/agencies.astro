@@ -1,9 +1,9 @@
 ---
-// Every transit agency on the live map (/transit/), one card each, with its network
+// Every transit agency on the live map (/transit/), one directory row each, with its network
 // drawn from the same route data the map uses (public/transit/). Live vehicle
 // counts load from /transit/api/vehicles.json.
-import DevLayout from 'kp-design/layouts/DevLayout.astro';
-import { StatusBadge } from 'kp-design';
+import LabLayout from 'kp-design/layouts/LabLayout.astro';
+import '../../styles/theme.css';
 import { systems } from '../../lib/transit-feeds';
 import { ICONS, MODE_LABELS, type IconMode } from '../../components/transit-icons';
 import meta from '../../../public/transit/meta.json';
@@ -201,12 +201,12 @@ function luminance(hex: string) {
  * 4.5:1 with either, so those are deepened a little at a time until white text does.
  */
 function brandColors(hex: string) {
-  const DARK = 0.0063; // luminance of #141317, the dark text
+  const DARK = 0.0093; // luminance of #0f1a1d, the page's ink
   const ratio = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
   let bg = hex;
   for (let step = 0; step < 20; step++) {
     const l = luminance(bg);
-    if (ratio(l, DARK) >= 4.5 && ratio(l, DARK) >= ratio(l, 1)) return { bg, text: '#141317' };
+    if (ratio(l, DARK) >= 4.5 && ratio(l, DARK) >= ratio(l, 1)) return { bg, text: '#0f1a1d' };
     if (ratio(l, 1) >= 4.5) return { bg, text: '#ffffff' };
     const n = parseInt(bg.slice(1), 16);
     bg = '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(c * 0.94).toString(16).padStart(2, '0')).join('');
@@ -265,6 +265,15 @@ function region(lines: Line[]) {
   return 'Puget Sound';
 }
 
+// How each region reads in a sentence ("136 routes and 7,013 stops around Puget Sound").
+const regionPhrase: Record<string, string> = {
+  'Puget Sound': 'around Puget Sound',
+  'Olympic Peninsula & Coast': 'on the Olympic Peninsula and coast',
+  Southwest: 'in Southwest Washington',
+  'Central & Eastern': 'in Central and Eastern Washington',
+  Statewide: 'across the state',
+};
+
 const regions = ['Puget Sound', 'Olympic Peninsula & Coast', 'Southwest', 'Central & Eastern', 'Statewide'];
 
 const cards = meta.systems
@@ -318,123 +327,124 @@ const totals = {
 };
 ---
 
-<DevLayout
+<LabLayout
   title="Every transit agency in Washington"
   description={`All ${totals.agencies} transit agencies on Kyle Pace’s live Washington transit map, each with its network drawn from its published routes, and how many vehicles are out right now.`}
-  accent="sky"
   image="/transit/share-agencies.png"
-  imageAlt="Every transit agency in Washington: a grid of agency route networks, each drawn in its brand color."
+  imageAlt="Every transit agency in Washington: the title on a green sign beside a grid of agency route networks, each drawn in its brand color."
+  themeColor={{ light: '#eceee8', dark: '#121719' }}
 >
-  <header class="intro">
-    <p class="eyebrow"><a href="https://kylepace.dev/labs/">Labs</a> / <a href="/transit/">Transit map</a> <StatusBadge status="in-progress" /></p>
-    <h1>Every agency, one network at a time.</h1>
-    <p class="lede prose">
-      {totals.agencies} agencies keep Washington moving, from King County Metro’s {cards.find((c) => c.key === 'kcm')?.routes} routes to a one-boat island ferry. Each drawing is the agency’s real route map.
-    </p>
-    <dl class="totals">
-      <div><dt>Agencies</dt><dd>{totals.agencies}</dd></div>
-      <div><dt>Routes</dt><dd>{totals.routes.toLocaleString()}</dd></div>
-      <div><dt>Stops</dt><dd>{totals.stops.toLocaleString()}</dd></div>
-      <div><dt>Moving right now</dt><dd data-total-live>…</dd></div>
-    </dl>
-  </header>
-
-  <div class="controls">
-    <div class="regions" role="group" aria-label="Region">
-      <button type="button" aria-pressed="true" data-region="">All</button>
-      {regions.filter((r) => cards.some((c) => c.region === r)).map((r) => <button type="button" aria-pressed="false" data-region={r}>{r}</button>)}
-    </div>
-    <label class="sort">
-      Sort
-      <select data-sort>
-        <option value="size">Biggest networks</option>
-        <option value="live">Most vehicles out now</option>
-        <option value="name">A to Z</option>
-      </select>
-    </label>
-  </div>
-
-  <ul class="cards" data-cards>
-    {
-      cards.map((c, n) => (
-        <li
-          class="card"
-          data-key={c.key}
-          data-region={c.region}
-          data-size={n}
-          data-name={c.name}
-          data-live-count="-1"
-          data-branded={c.brand ? '' : undefined}
-          style={c.brand ? `--brand: ${c.brand}; --brand-ink: ${c.brandText}` : undefined}
-        >
-          <div class="brand">
-            <h2>
-              <a href={`/transit/?agency=${c.key}`}>{c.name}</a>
-            </h2>
-            {c.also.length > 0 && <p class="also">with {c.also.join(', ')}</p>}
-            <p class="modes">
-              {c.modes.map((m) => (
-                <span class="mode" title={MODE_LABELS[m]}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d={ICONS[m]} fill-rule="evenodd" />
-                  </svg>
-                  <span class="visually-hidden">{MODE_LABELS[m]}</span>
-                </span>
-              ))}
-            </p>
-          </div>
-          <a class="art" href={`/transit/?agency=${c.key}`} tabindex="-1" aria-hidden="true">
-            <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice">
-              <path class="land" d={c.paths.land} />
-              <path class="borders" d={c.paths.borders} />
-              <g class="network">
-                {c.paths.routes.map((p) => (
-                  <path d={p.d} stroke={p.color} stroke-width={p.wide ? 2.6 : 1.4} />
-                ))}
-              </g>
-            </svg>
-          </a>
-          <div class="body">
-            <p class="stats">
-              <span><strong>{c.routes}</strong> {c.routes === 1 ? 'route' : 'routes'}</span>
-              <span><strong>{c.stops.toLocaleString()}</strong> stops</span>
-              <span class="region-tag">{c.region}</span>
-            </p>
-            <p class="live" data-live={c.live ? 'pending' : 'none'}>
-              <span class="dot" aria-hidden="true" />
-              <span data-live-text>{c.live ? 'Checking…' : 'Schedules only, no live tracking'}</span>
-            </p>
-            {
-              (c.site || c.shop) && (
-                <p class="links">
-                  {c.site && (
-                    <a href={c.site} target="_blank" rel="noopener">
-                      Website<span class="visually-hidden"> for {c.name}</span> ↗
-                    </a>
-                  )}
-                  {c.shop && (
-                    <a href={c.shop} target="_blank" rel="noopener">
-                      Merch shop<span class="visually-hidden"> for {c.name}</span> ↗
-                    </a>
-                  )}
-                </p>
-              )
-            }
-          </div>
-        </li>
-      ))
-    }
+  <ul class="lab-nav" slot="bar">
+    <li><a href="/transit/">Live map</a></li>
+    <li><a href="/transit/agencies/" aria-current="page">Agencies</a></li>
+    <li><a href="#about">About</a></li>
   </ul>
 
-  <p class="fine-print prose muted">
-    Drawings come from each agency’s published GTFS schedule, one line per route. Live counts are vehicles reporting
-    in the last 15 minutes. <a href="/transit/">Back to the live map</a>
-  </p>
-</DevLayout>
+  <div class="page">
+    <header class="intro">
+      <h1 class="plate">Every transit agency in Washington</h1>
+      <p class="summary">
+        {totals.agencies} agencies run {totals.routes.toLocaleString()} routes and serve {totals.stops.toLocaleString()} stops.
+        <span data-total-live></span>
+      </p>
+    </header>
+
+    <div class="controls">
+      <div class="regions" role="group" aria-label="Region">
+        <button type="button" aria-pressed="true" data-region="">All</button>
+        {regions.filter((r) => cards.some((c) => c.region === r)).map((r) => <button type="button" aria-pressed="false" data-region={r}>{r}</button>)}
+      </div>
+      <label class="sort">
+        Order
+        <select data-sort>
+          <option value="size">Biggest networks</option>
+          <option value="live">Most vehicles out now</option>
+          <option value="name">A to Z</option>
+        </select>
+      </label>
+    </div>
+
+    <ul class="directory" data-cards>
+      {
+        cards.map((c, n) => (
+          <li
+            class="entry"
+            data-key={c.key}
+            data-region={c.region}
+            data-size={n}
+            data-name={c.name}
+            data-live-count="-1"
+            style={`--brand: ${c.brand ?? 'var(--ink)'}; --brand-ink: ${c.brandText ?? 'var(--bg)'}`}
+          >
+            <a class="art" href={`/transit/?agency=${c.key}`} tabindex="-1" aria-hidden="true">
+              <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice">
+                <path class="land" d={c.paths.land} />
+                <path class="borders" d={c.paths.borders} />
+                <g class="network">
+                  {c.paths.routes.map((p) => (
+                    <path d={p.d} stroke={p.color} stroke-width={p.wide ? 2.6 : 1.4} />
+                  ))}
+                </g>
+              </svg>
+            </a>
+            <div class="info">
+              <h2>
+                <a href={`/transit/?agency=${c.key}`}>{c.name}</a>
+              </h2>
+              {c.also.length > 0 && <p class="also">With {c.also.join(', ')}</p>}
+              <p class="facts">
+                <span class="modes">
+                  {c.modes.map((m) => (
+                    <svg viewBox="0 0 24 24" role="img" aria-label={MODE_LABELS[m]}>
+                      <path d={ICONS[m]} fill-rule="evenodd" />
+                    </svg>
+                  ))}
+                </span>
+                {c.routes.toLocaleString()} {c.routes === 1 ? 'route' : 'routes'} and {c.stops.toLocaleString()} {c.stops === 1 ? 'stop' : 'stops'} {regionPhrase[c.region]}.
+              </p>
+              <p class="live" data-live={c.live ? 'pending' : 'none'}>
+                <span data-live-text>{c.live ? 'Checking what’s running…' : 'Schedules only, no live tracking'}</span>
+              </p>
+              {
+                (c.site || c.shop) && (
+                  <p class="links">
+                    {c.site && (
+                      <a href={c.site} target="_blank" rel="noopener">
+                        Website<span class="visually-hidden"> for {c.name} (opens in a new tab)</span>
+                      </a>
+                    )}
+                    {c.shop && (
+                      <a href={c.shop} target="_blank" rel="noopener">
+                        Merch shop<span class="visually-hidden"> for {c.name} (opens in a new tab)</span>
+                      </a>
+                    )}
+                  </p>
+                )
+              }
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+
+    <section class="about" id="about" aria-labelledby="about-heading">
+      <h2 id="about-heading">About</h2>
+      <p>
+        This is every transit agency on the <a href="/transit/">live Washington transit map</a>. Each drawing is the
+        agency’s own route network, one line per route, from the schedule it publishes (GTFS). Those are rebuilt every
+        week. The count of vehicles out right now comes from the agencies’ live feeds and refreshes every 30 seconds while
+        this page is open; it counts vehicles that reported in the last 15 minutes.
+      </p>
+      <p>
+        Analytics works the same as the rest of kylepace.dev (<a href="https://kylepace.dev/privacy/">privacy</a>).
+      </p>
+    </section>
+  </div>
+</LabLayout>
 
 <script>
   const list = document.querySelector<HTMLElement>('[data-cards]')!;
-  const cards = [...list.querySelectorAll<HTMLElement>('.card')];
+  const cards = [...list.querySelectorAll<HTMLElement>('.entry')];
   const sortSelect = document.querySelector<HTMLSelectElement>('[data-sort]')!;
   const regionButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-region]')].filter((b) => b.tagName === 'BUTTON');
 
@@ -465,7 +475,7 @@ const totals = {
       // The Seattle Streetcar's live feed counts toward the city's routes in King County Metro's card.
       let total = 0;
       for (const [, [, n]] of counts) total += n;
-      document.querySelector('[data-total-live]')!.textContent = total.toLocaleString();
+      document.querySelector('[data-total-live]')!.textContent = `${total.toLocaleString()} ${total === 1 ? 'vehicle is' : 'vehicles are'} moving right now.`;
       for (const card of cards) {
         const entry = counts.get(card.dataset.key!);
         const live = card.querySelector<HTMLElement>('[data-live]')!;
@@ -477,7 +487,11 @@ const totals = {
       }
       if (sortSelect.value === 'live') sort();
     } catch {
-      document.querySelector('[data-total-live]')!.textContent = '–';
+      document.querySelector('[data-total-live]')!.textContent = '';
+      for (const card of cards) {
+        const live = card.querySelector<HTMLElement>('[data-live="pending"]');
+        if (live) live.querySelector('[data-live-text]')!.textContent = 'Live count didn’t load';
+      }
     }
   }
   refresh();
@@ -485,162 +499,123 @@ const totals = {
 </script>
 
 <style>
-  .intro {
-    padding-bottom: var(--space-6);
+  .page {
+    padding: var(--space-4) var(--gutter) 0;
+    max-width: 84rem;
   }
 
+  /* The page's sign: its name on Guide green. */
   .intro h1 {
-    max-width: 20ch;
-  }
-
-  .eyebrow {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .eyebrow a {
-    color: inherit;
-  }
-
-  .lede {
-    font-size: var(--step-1);
-    color: var(--ink-muted);
-  }
-
-  .totals {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-6) var(--space-12);
-    margin: var(--space-8) 0 0;
-  }
-
-  .totals dt {
-    font-size: var(--step--1);
-    color: var(--ink-muted);
-  }
-
-  .totals dd {
+    display: inline;
     margin: 0;
-    font-size: var(--step-3);
+    padding: 0.08em 0.35em 0.12em;
+    font-size: var(--step-2);
     font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
+    line-height: 1.45;
+    letter-spacing: -0.015em;
+    border-radius: var(--radius-sm);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
+
+  .summary {
+    max-width: 44rem;
+    margin: var(--space-4) 0 var(--space-8);
+    font-size: var(--step-1);
+    line-height: 1.4;
+  }
+
+  /* ---------- Region tabs and order ---------- */
 
   .controls {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
-    align-items: center;
+    gap: var(--space-2) var(--space-6);
+    align-items: end;
     justify-content: space-between;
-    margin-bottom: var(--space-6);
+    border-bottom: 3px solid var(--ink);
   }
 
   .regions {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: 0 var(--space-2);
   }
 
-  .regions button,
-  .sort select {
+  .regions button {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    padding: 0 var(--space-1);
     font: inherit;
     font-size: var(--step--1);
     font-weight: 600;
     color: var(--ink-muted);
-    background: var(--bg-raised);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: var(--space-1) var(--space-3);
+    background: none;
+    border: 0;
     cursor: pointer;
   }
 
+  .regions button:hover {
+    color: var(--ink);
+  }
+
+  /* The selected region: ink, with a Guide green bar under it, like the current tab. */
   .regions button[aria-pressed='true'] {
-    color: var(--bg);
-    background: var(--ink);
-    border-color: var(--ink);
+    color: var(--ink);
+    box-shadow: inset 0 -4px 0 var(--plate);
   }
 
   .sort {
     display: flex;
     gap: var(--space-2);
     align-items: center;
+    padding-bottom: var(--space-2);
     font-size: var(--step--1);
     color: var(--ink-muted);
   }
 
   .sort select {
+    min-height: 2.5rem;
+    font: inherit;
+    font-weight: 600;
     color: var(--ink);
+    background: var(--bg-raised);
+    border: 1px solid var(--control-line);
     border-radius: var(--radius-sm);
+    padding: 0 var(--space-2);
   }
 
-  .cards {
-    list-style: none;
+  /* ---------- The directory: a row per agency, two columns on wide screens ---------- */
+
+  .directory {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 36rem), 1fr));
+    column-gap: var(--space-12);
     margin: 0;
     padding: 0;
+    list-style: none;
+  }
+
+  .entry {
     display: grid;
-    gap: var(--space-6);
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    grid-template-columns: clamp(8.5rem, 34%, 15rem) 1fr;
+    gap: var(--space-4);
+    align-items: start;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--line);
   }
 
-  .card {
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-raised);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-
-  .card[hidden] {
+  .entry[hidden] {
     display: none;
-  }
-
-  /* The agency's own color across the top, its name set large on it. */
-  .brand {
-    --brand: color-mix(in oklab, var(--ink), var(--bg-raised) 88%);
-    --brand-ink: var(--ink);
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    min-height: 7.5rem;
-    padding: var(--space-4);
-    padding-right: var(--space-12);
-    background: var(--brand);
-    color: var(--brand-ink);
-  }
-
-  .card[data-branded] .brand {
-    --brand: inherit;
-    --brand-ink: inherit;
-    background: var(--brand);
-    color: var(--brand-ink);
   }
 
   /* A small map behind each network: water, land, county lines. */
   .art {
-    position: relative;
     display: block;
     aspect-ratio: 280 / 170;
-    background: light-dark(#d9e6ef, #142330);
-    border-bottom: 1px solid var(--line);
+    background: var(--sound);
+    border-radius: var(--radius-sm);
     overflow: hidden;
-  }
-
-  .art .land {
-    fill: light-dark(#f4f1ea, #23222a);
-    stroke: light-dark(#c9d6df, #2b3a47);
-    stroke-width: 0.8;
-  }
-
-  .art .borders {
-    fill: none;
-    stroke: light-dark(#ddd6ca, #34313b);
-    stroke-width: 0.7;
-    stroke-dasharray: 2 2;
   }
 
   .art svg {
@@ -649,149 +624,114 @@ const totals = {
     height: 100%;
   }
 
+  .art .land {
+    fill: var(--bg-raised);
+    stroke: color-mix(in oklab, var(--sound), var(--ink) 15%);
+    stroke-width: 0.8;
+  }
+
+  .art .borders {
+    fill: none;
+    stroke: var(--line);
+    stroke-width: 0.7;
+    stroke-dasharray: 2 2;
+  }
+
   .art .network path {
     fill: none;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    :root:not([data-motion='reduce']) .art svg {
-      transition: transform var(--duration) var(--ease-out);
-    }
-
-    :root:not([data-motion='reduce']) .art:hover svg {
-      transform: scale(1.04);
-    }
-  }
-
-  .body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-4) var(--space-4) var(--space-4);
-    flex: 1;
-  }
-
-  h2 {
+  .info p {
     margin: 0;
+  }
+
+  /* The name on a plate in the agency's own color, like the sign on its buses' stops. */
+  h2 {
+    margin: 0 0 var(--space-2);
     font-size: var(--step-1);
-    line-height: 1.15;
+    line-height: 1.5;
     letter-spacing: -0.01em;
   }
 
   h2 a {
-    color: inherit;
+    padding: 0.05em 0.35em 0.1em;
+    background: var(--brand);
+    color: var(--brand-ink);
+    border-radius: 3px;
     text-decoration: none;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
 
   h2 a:hover {
     text-decoration: underline;
-  }
-
-  .body p,
-  .brand p {
-    margin: 0;
+    text-underline-offset: 0.15em;
   }
 
   .also {
+    margin-bottom: var(--space-1) !important;
+    font-size: var(--step--1);
+    color: var(--ink-muted);
+  }
+
+  .facts {
     font-size: var(--step--1);
   }
 
   .modes {
-    display: flex;
-    gap: var(--space-1);
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: auto !important;
+    display: inline-flex;
+    gap: 0.2rem;
+    margin-right: var(--space-1);
+    vertical-align: -0.3em;
   }
 
-  /* Mode icons in the brand's text color, on a faint disc of it. */
-  .mode {
-    display: inline-grid;
-    place-items: center;
-    width: 1.6rem;
-    height: 1.6rem;
-    border-radius: 50%;
-    background: color-mix(in srgb, currentColor 16%, transparent);
-  }
-
-  .mode svg {
-    width: 1.05rem;
-    height: 1.05rem;
-    fill: currentColor;
-  }
-
-  .region-tag {
-    margin-left: auto;
-  }
-
-  .stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-4);
-    font-size: var(--step--1);
-    color: var(--ink-muted);
-  }
-
-  .stats strong {
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
+  .modes svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: var(--ink);
   }
 
   .live {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-    margin-top: auto !important;
+    margin-top: var(--space-1) !important;
     font-size: var(--step--1);
     color: var(--ink-muted);
-  }
-
-  .dot {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: var(--line);
-    flex: none;
   }
 
   [data-live='on'] {
     color: var(--ink);
-    font-weight: 600;
-  }
-
-  [data-live='on'] .dot {
-    background: var(--lime);
-  }
-
-  [data-live='error'] .dot {
-    background: var(--coral);
+    font-weight: 700;
   }
 
   .links {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-1) var(--space-4);
+    gap: 0 var(--space-4);
+    margin-top: var(--space-1) !important;
     font-size: var(--step--1);
     font-weight: 600;
   }
 
   .links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
     color: var(--accent-ink);
   }
 
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .fine-print {
+  .about {
+    max-width: 40rem;
     margin-top: var(--space-12);
     font-size: var(--step--1);
+  }
+
+  .about h2 {
+    font-size: var(--step-1);
+    line-height: 1.2;
+  }
+
+  .about p {
+    margin: 0 0 var(--space-3);
   }
 </style>

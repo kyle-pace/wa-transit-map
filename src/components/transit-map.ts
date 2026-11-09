@@ -6,7 +6,8 @@
     (public/transit/), loaded once;
   - vehicles: /transit/api/vehicles.json (src/lib/transit.ts), polled every 15 seconds
     while the tab is visible;
-  - the basemap: OpenFreeMap vector tiles (free, no key), light or dark to match the site.
+  - the basemap: OpenFreeMap vector tiles (free, no key), light or dark to match the site,
+    with its land and water retinted to the page's Shore and Sound (src/styles/theme.css).
 */
 import maplibregl, { type GeoJSONSource, type Map as MapLibreMap, type MapGeoJSONFeature } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -36,6 +37,12 @@ const GLIDE_MS = 280;
 const STYLES = {
   light: 'https://tiles.openfreemap.org/styles/positron',
   dark: 'https://tiles.openfreemap.org/styles/dark',
+};
+// The page's Shore (land) and Sound (water), from src/styles/theme.css, so the map and the
+// page read as one surface. Dark mode also evens out the basemap's park and wood fills.
+const BASEMAP = {
+  light: { land: '#eceee8', water: '#b3cad2', green: null, panel: '#f9faf7', halo: '#ffffff' },
+  dark: { land: '#121719', water: '#1a3440', green: '#192124', panel: '#1b2225', halo: '#121719' },
 };
 const MODE_COLORS: Record<Mode, string> = { bus: '#2f6fdf', rail: '#7048e8', tram: '#0c8a6a', ferry: '#1098ad', other: '#868e96' };
 // Distinct line colors for agencies that paint every route the same (King County Metro's
@@ -90,6 +97,11 @@ function chipText(hex: string) {
     return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.3 ? '#111111' : '#ffffff';
+}
+
+/** A link that opens in a new tab (so the map keeps its place), and says so. */
+function external(href: string, text: string) {
+  return el('a', { href, target: '_blank', rel: 'noopener' }, text, el('span', { className: 'visually-hidden' }, ' (opens in a new tab)'));
 }
 
 const ICON_MODES: IconMode[] = ['bus', 'tram', 'rail', 'ferry'];
@@ -175,6 +187,12 @@ export function iconSvg(mode: Mode, className = 'tm-icon') {
 export function startTransitMap(root: HTMLElement) {
   const container = root.querySelector<HTMLElement>('[data-map]')!;
   const statusEl = root.querySelector<HTMLElement>('[data-status]')!;
+  // How long ago, kept out of the live region so screen readers aren't told every 5 seconds.
+  const updatedEl = root.querySelector<HTMLElement>('[data-updated]');
+  const say = (text: string, updated = '') => {
+    if (statusEl.textContent !== text) statusEl.textContent = text;
+    if (updatedEl) updatedEl.textContent = updated;
+  };
   const modeInputs = [...root.querySelectorAll<HTMLInputElement>('input[name="mode"]')];
   const layerInputs = [...root.querySelectorAll<HTMLInputElement>('input[name="layer"]')];
   const regionSelect = root.querySelector<HTMLSelectElement>('[data-region]');
@@ -210,12 +228,18 @@ export function startTransitMap(root: HTMLElement) {
     fitBoundsOptions: { padding: 20 },
     minZoom: 5,
     maxBounds: [-130, 43, -110, 51],
-    attributionControl: { compact: true },
+    // Attribution sits bottom-left: the display settings button has the bottom-right corner.
+    attributionControl: false,
     cooperativeGestures: matchMedia('(pointer: coarse)').matches,
     dragRotate: false,
     pitchWithRotate: false,
   });
   map.touchZoomRotate.disableRotation();
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+  // MapLibre opens the compact credits at first; on phones fold them to the (i) button.
+  map.once('load', () => {
+    if (matchMedia('(max-width: 47.99rem)').matches) container.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
+  });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
   map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: false }, fitBoundsOptions: { maxZoom: 14 } }), 'top-right');
   map.addControl(new maplibregl.FullscreenControl({ container: root.querySelector<HTMLElement>('[data-frame]')! }), 'top-right');
@@ -267,9 +291,22 @@ export function startTransitMap(root: HTMLElement) {
 
   // ---------- Layers ----------
 
+  /** Retint the basemap's land and water to the page's own (see BASEMAP). */
+  function tintBasemap() {
+    const t = BASEMAP[currentTheme];
+    for (const layer of map.getStyle().layers ?? []) {
+      if (layer.type === 'background') map.setPaintProperty(layer.id, 'background-color', t.land);
+      else if (layer.type === 'fill' && /^water/.test(layer.id)) map.setPaintProperty(layer.id, 'fill-color', t.water);
+      else if (layer.type === 'line' && /^waterway/.test(layer.id)) map.setPaintProperty(layer.id, 'line-color', t.water);
+      else if (t.green && layer.type === 'fill' && /park|wood|grass/.test(layer.id)) map.setPaintProperty(layer.id, 'fill-color', t.green);
+      else if (layer.type === 'fill' && /^road_area_pier$/.test(layer.id)) map.setPaintProperty(layer.id, 'fill-color', t.land);
+    }
+  }
+
   function addOverlay() {
+    tintBasemap();
     const dark = currentTheme === 'dark';
-    const halo = dark ? '#141317' : '#ffffff';
+    const halo = BASEMAP[currentTheme].halo;
     // Marker images (a new style drops them, so they're added on every style load).
     const add = (name: string, image: ReturnType<typeof pixels>, sdf = false) => {
       if (!map.hasImage(name)) map.addImage(name, image, { sdf, pixelRatio: 2 });
@@ -279,7 +316,7 @@ export function startTransitMap(root: HTMLElement) {
     for (const mode of ICON_MODES) {
       add(`glyph-${mode}-w`, glyphImage(mode, '#ffffff'));
       add(`glyph-${mode}-k`, glyphImage(mode, '#111111'));
-      if (mode !== 'bus') add(`station-${mode}`, stationImage(mode, dark ? '#1e1c22' : '#ffffff', MODE_COLORS[mode]));
+      if (mode !== 'bus') add(`station-${mode}`, stationImage(mode, BASEMAP[currentTheme].panel, MODE_COLORS[mode]));
     }
 
     map.addSource('routes', { type: 'geojson', data: routesGeo ?? { type: 'FeatureCollection', features: [] }, tolerance: 0.5 });
@@ -341,7 +378,7 @@ export function startTransitMap(root: HTMLElement) {
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 1.8, 14, 3, 16, 5.5],
         'circle-color': halo,
-        'circle-stroke-color': dark ? '#aaa5b2' : '#5b5862',
+        'circle-stroke-color': dark ? '#9badb3' : '#46545a',
         'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 12.5, 1, 16, 1.6],
       },
     });
@@ -359,7 +396,7 @@ export function startTransitMap(root: HTMLElement) {
         'text-offset': [0.8, 0],
         'text-optional': true,
       },
-      paint: { 'text-color': dark ? '#aaa5b2' : '#5b5862', 'text-halo-color': halo, 'text-halo-width': 1.4 },
+      paint: { 'text-color': dark ? '#9badb3' : '#46545a', 'text-halo-color': halo, 'text-halo-width': 1.4 },
     });
 
     map.addLayer({
@@ -381,7 +418,7 @@ export function startTransitMap(root: HTMLElement) {
         'text-offset': [1.3, 0],
         'text-optional': true,
       },
-      paint: { 'text-color': dark ? '#f3efe8' : '#1b1a1f', 'text-halo-color': halo, 'text-halo-width': 1.6 },
+      paint: { 'text-color': dark ? '#e4ebed' : '#0f1a1d', 'text-halo-color': halo, 'text-halo-width': 1.6 },
     });
 
     // Route numbers along the lines, as small colored chips.
@@ -463,7 +500,7 @@ export function startTransitMap(root: HTMLElement) {
         'text-anchor': 'bottom',
         'text-optional': true,
       },
-      paint: { 'text-color': dark ? '#f3efe8' : '#1b1a1f', 'text-halo-color': halo, 'text-halo-width': 1.6 },
+      paint: { 'text-color': dark ? '#e4ebed' : '#0f1a1d', 'text-halo-color': halo, 'text-halo-width': 1.6 },
     });
     applyFilters();
     select(selectedRoute);
@@ -599,7 +636,12 @@ export function startTransitMap(root: HTMLElement) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       live = (await res.json()) as Live;
     } catch {
-      statusEl.textContent = 'Live positions didn’t load. Trying again shortly.';
+      say('Live positions didn’t load. Trying again shortly.');
+      for (const row of systemRows.values()) {
+        if (row.dataset.state !== 'loading') continue;
+        const out = row.querySelector<HTMLElement>('[data-count]');
+        if (out) out.textContent = 'Not loaded';
+      }
       return;
     }
     renderVehicles();
@@ -646,7 +688,7 @@ export function startTransitMap(root: HTMLElement) {
     const shown = vehiclesGeo.features.filter((f) => modes.has(f.properties!.m as Mode)).length;
     const reporting = live.feeds.filter((f) => f[1] && f[2] > 0).length;
     const secs = Math.max(0, Date.now() / 1000 - live.t);
-    statusEl.textContent = `${shown.toLocaleString()} vehicles live from ${reporting} agencies · updated ${ago(secs)}`;
+    say(`${shown.toLocaleString()} ${shown === 1 ? 'vehicle' : 'vehicles'} moving now, from ${reporting} agencies.`, `Updated ${ago(secs)}.`);
   }
 
   function updateSystems() {
@@ -656,7 +698,7 @@ export function startTransitMap(root: HTMLElement) {
       const out = row?.querySelector<HTMLElement>('[data-count]');
       if (!row || !out) continue;
       row.dataset.state = !ok ? 'error' : count ? 'live' : 'quiet';
-      out.textContent = !ok ? 'Feed not answering' : count ? `${count.toLocaleString()} live` : 'None running';
+      out.textContent = !ok ? 'Feed not answering' : count ? count.toLocaleString() : 'None running';
       out.title = error ?? '';
     }
   }
@@ -713,7 +755,7 @@ export function startTransitMap(root: HTMLElement) {
     const agency = meta!.agencies[route[0]][1];
     return [
       el('p', { className: 'tm-title' }, routeChip(i), ' ', route[3] && route[2] ? route[3] : ''),
-      el('p', { className: 'tm-meta' }, iconSvg(route[5]), `${MODE_NAMES[route[5]]} · ${agency}`),
+      el('p', { className: 'tm-meta' }, iconSvg(route[5]), `${MODE_NAMES[route[5]]}, ${agency}`),
     ];
   }
 
@@ -733,7 +775,7 @@ export function startTransitMap(root: HTMLElement) {
     if (art) parts.push(art);
     const stopName = stopId ? stopIndex.get(`${systemIndex.get(from)}:${stopId}`) : undefined;
     if (stopName) parts.push(el('p', {}, `${STATUS_WORDS[status ?? 2] ?? 'Heading to'} ${stopName}`));
-    const details = [label && !art && `Vehicle ${label}`, speed !== null && speed > 0.5 ? `${Math.round(speed * 2.237)} mph` : null, ts ? `seen ${ago(Date.now() / 1000 - ts)}` : null].filter(Boolean).join(' · ');
+    const details = [label && !art && `Vehicle ${label}`, speed !== null && speed > 0.5 ? `${Math.round(speed * 2.237)} mph` : null, ts ? `seen ${ago(Date.now() / 1000 - ts)}` : null].filter(Boolean).join(', ');
     if (details) parts.push(el('p', { className: 'tm-meta' }, details));
     select(r);
     show(f.geometry.type === 'Point' ? (f.geometry.coordinates as [number, number]) : map.getCenter(), el('div', {}, ...parts));
@@ -750,13 +792,13 @@ export function startTransitMap(root: HTMLElement) {
     if (feedKey === 'wsf') {
       const v = VESSELS[id];
       if (!v) return null;
-      return figure(ferrySvg(v.cls), `M/V ${v.name}`, `${v.cls} class · built ${v.built} · ${v.feet} ft · ${v.cars} cars, ${v.people.toLocaleString()} people`);
+      return figure(ferrySvg(v.cls), `M/V ${v.name}`, `${v.cls} class, built ${v.built}. ${v.feet} ft, ${v.cars} cars, ${v.people.toLocaleString()} people.`);
     }
     if (feedKey === 'kcm') {
       const bus = kcmBus(label || id);
       if (!bus) return null;
       const color = route >= 0 ? colorOf(route) : MODE_COLORS.bus;
-      return figure(busSvg(bus, color), `Bus ${label || id}`, [bus.model, POWER_WORDS[bus.power], `${bus.feet} ft`, bus.years === 'new' ? 'new' : `from ${bus.years}`, bus.note].filter(Boolean).join(' · '));
+      return figure(busSvg(bus, color), `Bus ${label || id}`, [bus.model, POWER_WORDS[bus.power], `${bus.feet} ft`, bus.years === 'new' ? 'new' : `from ${bus.years}`, bus.note].filter(Boolean).join(', '));
     }
     return null;
   }
@@ -786,9 +828,9 @@ export function startTransitMap(root: HTMLElement) {
     button.addEventListener('click', () => focusOn(system));
     const links = el('p', { className: 'tm-links' }, button);
     const site = websiteOf(system);
-    if (site) links.append(el('a', { href: site, target: '_blank', rel: 'noopener' }, 'Website ↗'));
+    if (site) links.append(external(site, 'Website'));
     const shop = shops.get(meta!.systems[system].key);
-    if (shop) links.append(el('a', { href: shop, target: '_blank', rel: 'noopener' }, 'Merch shop ↗'));
+    if (shop) links.append(external(shop, 'Merch shop'));
     return [el('p', { className: 'tm-meta' }, running ? `${running} running now` : 'None running right now'), links];
   }
 
@@ -872,8 +914,8 @@ export function startTransitMap(root: HTMLElement) {
       const [agency, , short, long, , mode] = meta.routes[i];
       const agencyName = meta.agencies[agency][1];
       items.push({
-        label: short && long ? `${short} · ${long}` : short || long,
-        detail: `${MODE_NAMES[mode]} · ${agencyName}`,
+        label: short && long ? `${short} ${long}` : short || long,
+        detail: `${MODE_NAMES[mode]}, ${agencyName}`,
         words: `${short} ${long} ${agencyName}`.toLowerCase(),
         short: short.toLowerCase(),
         route: i,
@@ -1031,7 +1073,7 @@ export function startTransitMap(root: HTMLElement) {
       await loadStops();
     })
     .catch(() => {
-      statusEl.textContent = 'The map data didn’t load. Try reloading the page.';
+      say('The map data didn’t load. Try reloading the page.');
     });
 
   return map;

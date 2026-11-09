@@ -4,7 +4,7 @@ Every bus, train and ferry in Washington that reports where it is, on one zoomab
 
 Live at **[kylepace.dev/transit](https://kylepace.dev/transit/)**, one of the experiments on [kylepace.dev](https://kylepace.dev). There's also a page for [every agency](https://kylepace.dev/transit/agencies/).
 
-Built with [Astro](https://astro.build) and [MapLibre](https://maplibre.org) on Cloudflare Workers, using [kp-design](https://github.com/kyle-pace/kp-design), following [kyle-pace/principles](https://github.com/kyle-pace/principles).
+Built with [Astro](https://astro.build) and [MapLibre](https://maplibre.org) on Cloudflare Workers, following [kyle-pace/principles](https://github.com/kyle-pace/principles). It's a standalone lab: the shell (back link, footer, display settings, analytics) is `LabLayout` from [kp-design](https://github.com/kyle-pace/kp-design), and its look is its own, in `src/styles/theme.css` (plan: `design/PLAN.md`).
 
 ## Run it
 
