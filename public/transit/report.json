@@ -1,5 +1,5 @@
 {
- "built": "2026-11-09T21:29:41.560Z",
+ "built": "2026-11-14T16:29:03.382Z",
  "systems": {
   "st": {
    "ok": true,
@@ -10,7 +10,7 @@
    "routes": 6,
    "routesWithGeometry": 6,
    "stops": 128,
-   "ms": 1038
+   "ms": 694
   },
   "kcm": {
    "ok": true,
@@ -23,8 +23,8 @@
    ],
    "routes": 142,
    "routesWithGeometry": 142,
-   "stops": 6265,
-   "ms": 1956
+   "stops": 6271,
+   "ms": 1604
   },
   "ct": {
    "ok": true,
@@ -33,10 +33,10 @@
     "Community Transit",
     "Sound Transit"
    ],
-   "routes": 39,
-   "routesWithGeometry": 39,
+   "routes": 40,
+   "routesWithGeometry": 40,
    "stops": 1713,
-   "ms": 926
+   "ms": 813
   },
   "pt": {
    "ok": true,
@@ -59,7 +59,7 @@
    "routes": 10,
    "routesWithGeometry": 10,
    "stops": 496,
-   "ms": 684
+   "ms": 607
   },
   "wsf": {
    "ok": true,
@@ -70,7 +70,7 @@
    "routes": 38,
    "routesWithGeometry": 38,
    "stops": 19,
-   "ms": 327
+   "ms": 102
   },
   "kt": {
    "ok": true,
@@ -81,7 +81,7 @@
    "routes": 77,
    "routesWithGeometry": 77,
    "stops": 1322,
-   "ms": 803
+   "ms": 956
   },
   "it": {
    "ok": true,
@@ -92,7 +92,7 @@
    "routes": 30,
    "routesWithGeometry": 30,
    "stops": 1118,
-   "ms": 774
+   "ms": 864
   },
   "pcf": {
    "ok": true,
@@ -103,7 +103,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 3,
-   "ms": 157
+   "ms": 110
   },
   "it2": {
    "ok": true,
@@ -114,7 +114,7 @@
    "routes": 16,
    "routesWithGeometry": 16,
    "stops": 447,
-   "ms": 186
+   "ms": 331
   },
   "skt": {
    "ok": true,
@@ -124,8 +124,8 @@
    ],
    "routes": 19,
    "routesWithGeometry": 19,
-   "stops": 479,
-   "ms": 391
+   "stops": 477,
+   "ms": 516
   },
   "wta": {
    "ok": true,
@@ -136,7 +136,7 @@
    "routes": 34,
    "routesWithGeometry": 34,
    "stops": 878,
-   "ms": 1228
+   "ms": 732
   },
   "mason": {
    "ok": true,
@@ -147,7 +147,7 @@
    "routes": 13,
    "routesWithGeometry": 13,
    "stops": 66,
-   "ms": 48
+   "ms": 123
   },
   "jt": {
    "ok": true,
@@ -158,7 +158,7 @@
    "routes": 11,
    "routesWithGeometry": 11,
    "stops": 240,
-   "ms": 168
+   "ms": 379
   },
   "clallam": {
    "ok": true,
@@ -169,7 +169,7 @@
    "routes": 17,
    "routesWithGeometry": 17,
    "stops": 334,
-   "ms": 631
+   "ms": 574
   },
   "gh": {
    "ok": true,
@@ -180,7 +180,7 @@
    "routes": 14,
    "routesWithGeometry": 14,
    "stops": 344,
-   "ms": 65
+   "ms": 160
   },
   "pacific": {
    "ok": true,
@@ -191,7 +191,7 @@
    "routes": 7,
    "routesWithGeometry": 7,
    "stops": 43,
-   "ms": 36
+   "ms": 112
   },
   "twin": {
    "ok": true,
@@ -202,7 +202,7 @@
    "routes": 9,
    "routesWithGeometry": 9,
    "stops": 106,
-   "ms": 36
+   "ms": 49
   },
   "rural": {
    "ok": true,
@@ -213,7 +213,7 @@
    "routes": 3,
    "routesWithGeometry": 3,
    "stops": 20,
-   "ms": 22
+   "ms": 38
   },
   "svt": {
    "ok": true,
@@ -224,7 +224,7 @@
    "routes": 3,
    "routesWithGeometry": 3,
    "stops": 25,
-   "ms": 19
+   "ms": 37
   },
   "bb": {
    "ok": true,
@@ -235,7 +235,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 2,
-   "ms": 13
+   "ms": 55
   },
   "guemes": {
    "ok": true,
@@ -246,7 +246,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 2,
-   "ms": 13
+   "ms": 33
   },
   "lummif": {
    "ok": true,
@@ -257,7 +257,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 2,
-   "ms": 12
+   "ms": 32
   },
   "lummi": {
    "ok": true,
@@ -268,7 +268,7 @@
    "routes": 3,
    "routesWithGeometry": 3,
    "stops": 50,
-   "ms": 26
+   "ms": 40
   },
   "muckleshoot": {
    "ok": true,
@@ -279,7 +279,7 @@
    "routes": 2,
    "routesWithGeometry": 2,
    "stops": 58,
-   "ms": 20
+   "ms": 37
   },
   "nisqually": {
    "ok": true,
@@ -290,7 +290,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 7,
-   "ms": 12
+   "ms": 32
   },
   "squaxin": {
    "ok": true,
@@ -301,7 +301,7 @@
    "routes": 3,
    "routesWithGeometry": 3,
    "stops": 6,
-   "ms": 21
+   "ms": 35
   },
   "makah": {
    "ok": true,
@@ -312,7 +312,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 19,
-   "ms": 15
+   "ms": 34
   },
   "elwha": {
    "ok": true,
@@ -323,7 +323,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 9,
-   "ms": 13
+   "ms": 32
   },
   "ctran": {
    "ok": true,
@@ -334,7 +334,7 @@
    "routes": 31,
    "routesWithGeometry": 31,
    "stops": 897,
-   "ms": 745
+   "ms": 691
   },
   "rct": {
    "ok": true,
@@ -342,10 +342,10 @@
    "agencies": [
     "RiverCities Transit"
    ],
-   "routes": 11,
-   "routesWithGeometry": 11,
-   "stops": 225,
-   "ms": 54
+   "routes": 10,
+   "routesWithGeometry": 10,
+   "stops": 223,
+   "ms": 96
   },
   "skamania": {
    "ok": true,
@@ -356,7 +356,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 12,
-   "ms": 44
+   "ms": 72
   },
   "lewis": {
    "ok": true,
@@ -367,7 +367,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 20,
-   "ms": 19
+   "ms": 37
   },
   "mtadams": {
    "ok": true,
@@ -378,7 +378,7 @@
    "routes": 3,
    "routesWithGeometry": 3,
    "stops": 41,
-   "ms": 31
+   "ms": 44
   },
   "wahkiakum": {
    "ok": true,
@@ -389,7 +389,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 2,
-   "ms": 11
+   "ms": 31
   },
   "sta": {
    "ok": true,
@@ -400,7 +400,7 @@
    "routes": 53,
    "routesWithGeometry": 53,
    "stops": 1669,
-   "ms": 1971
+   "ms": 1903
   },
   "bft": {
    "ok": true,
@@ -411,7 +411,7 @@
    "routes": 31,
    "routesWithGeometry": 31,
    "stops": 876,
-   "ms": 1866
+   "ms": 1198
   },
   "link": {
    "ok": true,
@@ -422,7 +422,7 @@
    "routes": 21,
    "routesWithGeometry": 21,
    "stops": 627,
-   "ms": 224
+   "ms": 510
   },
   "yakima": {
    "ok": true,
@@ -433,7 +433,7 @@
    "routes": 9,
    "routesWithGeometry": 9,
    "stops": 507,
-   "ms": 350
+   "ms": 133
   },
   "vt": {
    "ok": true,
@@ -444,7 +444,7 @@
    "routes": 12,
    "routesWithGeometry": 12,
    "stops": 173,
-   "ms": 222
+   "ms": 101
   },
   "pullman": {
    "ok": true,
@@ -452,10 +452,10 @@
    "agencies": [
     "Pullman Transit"
    ],
-   "routes": 8,
-   "routesWithGeometry": 8,
-   "stops": 140,
-   "ms": 344
+   "routes": 12,
+   "routesWithGeometry": 12,
+   "stops": 144,
+   "ms": 618
   },
   "ellensburg": {
    "ok": true,
@@ -466,7 +466,7 @@
    "routes": 6,
    "routesWithGeometry": 6,
    "stops": 80,
-   "ms": 79
+   "ms": 207
   },
   "grant": {
    "ok": true,
@@ -477,7 +477,7 @@
    "routes": 11,
    "routesWithGeometry": 11,
    "stops": 204,
-   "ms": 33
+   "ms": 69
   },
   "asotin": {
    "ok": true,
@@ -489,7 +489,7 @@
    "routes": 8,
    "routesWithGeometry": 8,
    "stops": 109,
-   "ms": 23
+   "ms": 40
   },
   "pfp": {
    "ok": true,
@@ -500,7 +500,7 @@
    "routes": 11,
    "routesWithGeometry": 11,
    "stops": 62,
-   "ms": 63
+   "ms": 82
   },
   "pahto": {
    "ok": true,
@@ -511,7 +511,7 @@
    "routes": 3,
    "routesWithGeometry": 3,
    "stops": 33,
-   "ms": 38
+   "ms": 48
   },
   "selah": {
    "ok": true,
@@ -522,7 +522,7 @@
    "routes": 2,
    "routesWithGeometry": 2,
    "stops": 32,
-   "ms": 14
+   "ms": 36
   },
   "uniongap": {
    "ok": true,
@@ -533,7 +533,7 @@
    "routes": 2,
    "routesWithGeometry": 2,
    "stops": 14,
-   "ms": 14
+   "ms": 33
   },
   "cct": {
    "ok": true,
@@ -544,7 +544,7 @@
    "routes": 3,
    "routesWithGeometry": 3,
    "stops": 17,
-   "ms": 20
+   "ms": 37
   },
   "kaltran": {
    "ok": true,
@@ -555,7 +555,7 @@
    "routes": 4,
    "routesWithGeometry": 4,
    "stops": 11,
-   "ms": 40
+   "ms": 47
   },
   "moccasin": {
    "ok": true,
@@ -566,7 +566,7 @@
    "routes": 4,
    "routesWithGeometry": 4,
    "stops": 16,
-   "ms": 21
+   "ms": 39
   },
   "trango": {
    "ok": true,
@@ -577,7 +577,7 @@
    "routes": 10,
    "routesWithGeometry": 10,
    "stops": 82,
-   "ms": 901
+   "ms": 722
   },
   "octn": {
    "ok": true,
@@ -588,7 +588,7 @@
    "routes": 2,
    "routesWithGeometry": 2,
    "stops": 10,
-   "ms": 130
+   "ms": 96
   },
   "lotl": {
    "ok": true,
@@ -599,7 +599,7 @@
    "routes": 1,
    "routesWithGeometry": 1,
    "stops": 5,
-   "ms": 11
+   "ms": 31
   },
   "wsdot": {
    "ok": true,
@@ -614,7 +614,7 @@
    "routes": 5,
    "routesWithGeometry": 5,
    "stops": 71,
-   "ms": 296
+   "ms": 212
   }
  }
 }
