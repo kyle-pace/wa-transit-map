@@ -27,7 +27,7 @@ const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'lon
   <ul class="lab-nav" slot="bar">
     <li><a href="/transit/" aria-current="page">Live map</a></li>
     <li><a href="/transit/agencies/">Agencies</a></li>
-    <li><a href="#about">About</a></li>
+    <li><a href="/transit/about/">About</a></li>
   </ul>
 
   <TransitMap />
@@ -75,6 +75,7 @@ const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'lon
       <p>
         This map shows every bus, train and ferry in Washington that reports where it is, with every route and stop
         around it. Tap a vehicle to see its route and where it’s headed, or search for a route or an agency.
+        <a href="/transit/about/">How the map works</a>.
       </p>
       <p>
         Vehicle positions come from each agency’s open live feed (GTFS-realtime) and refresh every 15 seconds. Routes and

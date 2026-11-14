@@ -131,3 +131,14 @@ First draft, and what changed:
 - *Agencies as a grid of identical rounded cards with a big totals row.* Replaced
   with the directory rows and one summary sentence.
 - *Middle dots in meta lines* (popups, status). Now commas and plain sentences.
+
+## The about page
+
+`/transit/about/` explains how the map works. It's the one place the lab draws a route of
+its own: the path the data takes, from each agency's server to the screen, set as a strip
+map. A Guide green line runs down the left with a stop for every step, terminals filled at
+both ends, like the line diagram above the doors of a train car. Each stop has a name, one
+plain line saying where that step runs, and a short paragraph. The page's name sits on the
+same green plate as the other pages. Everything after the line is quiet: ruled headings
+and body text, under 70 characters a line. Counts and dates are read from the data files
+at build time, never typed in.

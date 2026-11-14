@@ -1,0 +1,276 @@
+---
+// About Washington transit: what the map is, and the route its data takes from each
+// agency's server to the screen, drawn as a line with a stop for every step
+// (design/PLAN.md, "The about page"). Counts and dates come from the same files the map
+// uses, so the page can't drift from what's really built.
+import LabLayout from 'kp-design/layouts/LabLayout.astro';
+import '../../styles/theme.css';
+import { systems } from '../../lib/transit-feeds';
+import meta from '../../../public/transit/meta.json';
+import stopsData from '../../../public/transit/stops.json';
+
+const withData = new Set(meta.systems.filter((_, i) => meta.agencies.some(([s]) => s === i)).map((s) => s.key));
+const onMap = systems.filter((s) => withData.has(s.key)).length;
+const live = systems.filter((s) => s.live).length;
+const viaOba = systems.filter((s) => s.live?.includes('{oba}')).map((s) => s.name);
+const credits = systems.filter((s) => s.credit).map((s) => s.credit!);
+const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' });
+const routes = meta.routes.length.toLocaleString('en-US');
+const stops = (stopsData.stops as unknown[]).length.toLocaleString('en-US');
+const list = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0]);
+
+// The line: one stop per step, in the order the data travels.
+const stopsOnLine = [
+  {
+    name: 'Agencies publish their schedules',
+    where: 'On each agency’s own website.',
+    body: [
+      `Transit agencies publish their routes, stops and timetables as open files in a shared format called GTFS. ${onMap} systems in Washington are on the map, from King County Metro down to two-landing ferries. Those files are the only source for routes and stops.`,
+    ],
+  },
+  {
+    name: 'A weekly job reads every one',
+    where: 'On GitHub Actions, once a week.',
+    body: [
+      `A script downloads each schedule, keeps the routes that are running, and trims every line to about 6 meters of detail so the map stays quick on a phone. Stops shared by two agencies are merged into one. The last run was ${updated}: ${routes} routes and ${stops} stops.`,
+      'If an agency’s server is down that week, its last good routes and stops are kept. One flaky server never wipes an agency off the map.',
+    ],
+  },
+  {
+    name: 'The site rebuilds',
+    where: 'On Cloudflare, whenever the data changes.',
+    body: ['The new routes and stops are saved with the rest of the site’s code, which starts a rebuild. There’s no database. The pages and the data are plain files.'],
+  },
+  {
+    name: 'Vehicles report where they are',
+    where: 'On each agency’s live feed.',
+    body: [
+      `${live} of those systems also publish a live feed (GTFS-realtime) with the position of every vehicle that’s out. ${list(viaOba)} come through OneBusAway Puget Sound, a shared service for the region.`,
+      'The rest publish schedules only, so the map shows their routes and stops without vehicles.',
+    ],
+  },
+  {
+    name: 'One small program gathers them',
+    where: 'On a Cloudflare Worker, only while someone has the map open.',
+    body: [
+      'When the map asks, a small program reads every live feed at once and merges them into one answer. That answer is kept for 15 seconds, so each agency’s server is asked only a few times a minute, however many people are watching.',
+      'A feed that doesn’t answer is skipped. The others still show.',
+    ],
+  },
+  {
+    name: 'Your browser draws the map',
+    where: 'On your phone or computer.',
+    body: [
+      'The map asks for new positions every 15 seconds and moves each vehicle to where it is now. The streets and water underneath come from OpenFreeMap, built on OpenStreetMap, recolored to match the page.',
+      'If you use “Find my location”, your position stays in your browser. It’s never sent anywhere.',
+    ],
+  },
+];
+---
+
+<LabLayout
+  title="How Washington transit works"
+  description="Where the live Washington transit map gets its routes, stops and vehicle positions, and the route that data takes from each agency’s server to your screen."
+  image="/transit/share-about.png"
+  imageAlt="How Washington transit works: the title on a green sign beside a transit line with six stops, from Agencies publish to Your browser draws."
+  themeColor={{ light: '#eceee8', dark: '#121719' }}
+>
+  <ul class="lab-nav" slot="bar">
+    <li><a href="/transit/">Live map</a></li>
+    <li><a href="/transit/agencies/">Agencies</a></li>
+    <li><a href="/transit/about/" aria-current="page">About</a></li>
+  </ul>
+
+  <article class="page">
+    <header class="intro">
+      <h1 class="plate">How Washington transit works</h1>
+      <p class="summary">
+        The <a href="/transit/">map</a> shows every bus, train and ferry in Washington that reports where it is, with every route and stop
+        around it. Here’s the route that information takes to get to your screen.
+      </p>
+    </header>
+
+    <section aria-labelledby="route-heading">
+      <h2 id="route-heading">The route, stop by stop</h2>
+      <ol class="line">
+        {
+          stopsOnLine.map((stop) => (
+            <li>
+              <h3>{stop.name}</h3>
+              <p class="where">{stop.where}</p>
+              {stop.body.map((text) => (
+                <p>{text}</p>
+              ))}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="notes" aria-labelledby="sources-heading">
+      <h2 id="sources-heading">Where it all comes from</h2>
+      <p>
+        Every schedule and live feed belongs to the agency that publishes it. The feeds were found through the
+        <a href="https://mobilitydatabase.org">Mobility Database</a> and <a href="https://www.transit.land">Transitland</a>. Map tiles are by
+        <a href="https://openfreemap.org">OpenFreeMap</a>, and the map data is © OpenStreetMap contributors. The
+        <a href="/transit/agencies/">agencies page</a> lists every system with its own website.
+      </p>
+      {credits.map((c) => <p>{c}</p>)}
+    </section>
+
+    <section class="notes" aria-labelledby="trust-heading">
+      <h2 id="trust-heading">How far to trust it</h2>
+      <p>
+        A vehicle on the map is where its agency last said it was, so it’s always a little behind the real bus. Some vehicles don’t report at
+        all, and a missing bus isn’t proof there’s no bus. For catching a ride, use the agency’s own app or the sign at the stop.
+      </p>
+      <p>
+        The weekly job and the program that reads the live feeds are tested against saved real feeds and broken ones, so a bad file from one
+        agency can’t take the map down.
+      </p>
+    </section>
+
+    <section class="notes" aria-labelledby="privacy-heading">
+      <h2 id="privacy-heading">Privacy</h2>
+      <p>
+        Your browser asks OpenFreeMap’s servers for the part of the map you’re looking at. Analytics works the same as the rest of
+        kylepace.dev: anonymous, no cookies, and you can turn it off (<a href="https://kylepace.dev/privacy/">privacy</a>).
+      </p>
+    </section>
+
+    <section class="notes" aria-labelledby="code-heading">
+      <h2 id="code-heading">The code</h2>
+      <p>
+        It’s all public: <a href="https://github.com/kyle-pace/wa-transit-map">github.com/kyle-pace/wa-transit-map</a>. If an agency is
+        missing or something looks wrong, <a href="mailto:mail@kylepace.net">tell me</a>.
+      </p>
+    </section>
+  </article>
+</LabLayout>
+
+<style>
+  .page {
+    padding: var(--space-4) var(--gutter) var(--space-12);
+    max-width: 84rem;
+  }
+
+  /* The page's sign, the same plate as the agencies page. */
+  .intro h1 {
+    display: inline;
+    margin: 0;
+    padding: 0.08em 0.35em 0.12em;
+    font-size: var(--step-2);
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.015em;
+    border-radius: var(--radius-sm);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .summary {
+    max-width: 44rem;
+    margin: var(--space-4) 0 var(--space-8);
+    font-size: var(--step-1);
+    line-height: 1.4;
+  }
+
+  h2 {
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-2);
+    max-width: 44rem;
+    font-size: var(--step-1);
+    font-weight: 700;
+    border-bottom: 3px solid var(--ink);
+  }
+
+  a {
+    color: var(--accent-ink);
+    text-underline-offset: 0.15em;
+  }
+
+  .plate a,
+  .lab-nav a {
+    color: inherit;
+  }
+
+  p {
+    max-width: 36rem;
+    margin: 0 0 var(--space-3);
+  }
+
+  /* The line: a strip map. A Guide green line runs down the left with a white-centered
+     stop at each step, the way a route is drawn on the wall of a train car. */
+  .line {
+    --stop: 1.25rem;
+    --track: 0.375rem;
+    list-style: none;
+    margin: var(--space-6) 0 var(--space-12);
+    padding: 0;
+  }
+
+  .line li {
+    position: relative;
+    padding: 0 0 var(--space-8) calc(var(--stop) + var(--space-4));
+  }
+
+  /* The track between this stop and the next. */
+  .line li::before {
+    content: '';
+    position: absolute;
+    left: calc((var(--stop) - var(--track)) / 2);
+    top: calc(var(--stop) / 2 + 0.2rem);
+    bottom: calc(-1 * (var(--stop) / 2 + 0.2rem));
+    width: var(--track);
+    background: var(--plate);
+  }
+
+  .line li:last-child {
+    padding-bottom: 0;
+  }
+
+  .line li:last-child::before {
+    display: none;
+  }
+
+  /* The stop. */
+  .line li::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.2rem;
+    width: var(--stop);
+    height: var(--stop);
+    box-sizing: border-box;
+    border: 0.25rem solid var(--plate);
+    border-radius: 50%;
+    background: var(--bg-raised);
+  }
+
+  /* The ends of the line are terminals: filled, like the last stop on a strip map. */
+  .line li:first-child::after,
+  .line li:last-child::after {
+    background: var(--plate);
+    box-shadow: inset 0 0 0 0.2rem var(--bg-raised);
+    border-width: 0.2rem;
+  }
+
+  .line h3 {
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .where {
+    margin: var(--space-1) 0 var(--space-3);
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+
+  .notes {
+    margin-bottom: var(--space-8);
+  }
+</style>
