@@ -134,11 +134,10 @@ First draft, and what changed:
 
 ## The about page
 
-`/transit/about/` explains how the map works. It's the one place the lab draws a route of
-its own: the path the data takes, from each agency's server to the screen, set as a strip
-map. A Guide green line runs down the left with a stop for every step, terminals filled at
-both ends, like the line diagram above the doors of a train car. Each stop has a name, one
-plain line saying where that step runs, and a short paragraph. The page's name sits on the
-same green plate as the other pages. Everything after the line is quiet: ruled headings
-and body text, under 70 characters a line. Counts and dates are read from the data files
-at build time, never typed in.
+`/transit/about/` uses the standard About page title, headings and step format (the
+`about-page` skill): the words are the same as every other project's, and the look is this
+lab's. The title sits on the same green plate as the other pages. "How it works" is the one
+drawn part: its steps run down a Guide green line with a stop for each, terminals filled at
+both ends, like the line diagram above the doors of a train car. Everything else is ruled
+headings and body text, under 70 characters a line. Counts and dates are read from the
+data files at build time, never typed in.

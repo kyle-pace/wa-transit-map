@@ -1,8 +1,8 @@
 ---
-// About Washington transit: what the map is, and the route its data takes from each
-// agency's server to the screen, drawn as a line with a stop for every step
-// (design/PLAN.md, "The about page"). Counts and dates come from the same files the map
-// uses, so the page can't drift from what's really built.
+// About Washington transit. Headings and step format follow the about-page skill
+// (.agents/skills/about-page/SKILL.md); "How it works" is drawn as a transit line with a
+// stop for every step (design/PLAN.md, "The about page"). Counts and dates come from the
+// same files the map uses, so the page can't drift from what's really built.
 import LabLayout from 'kp-design/layouts/LabLayout.astro';
 import '../../styles/theme.css';
 import { systems } from '../../lib/transit-feeds';
@@ -23,14 +23,14 @@ const list = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join
 const stopsOnLine = [
   {
     name: 'Agencies publish their schedules',
-    where: 'On each agency’s own website.',
+    where: 'Each agency’s own website',
     body: [
       `Transit agencies publish their routes, stops and timetables as open files in a shared format called GTFS. ${onMap} systems in Washington are on the map, from King County Metro down to two-landing ferries. Those files are the only source for routes and stops.`,
     ],
   },
   {
-    name: 'A weekly job reads every one',
-    where: 'On GitHub Actions, once a week.',
+    name: 'A weekly job reads every schedule',
+    where: 'GitHub Actions, once a week',
     body: [
       `A script downloads each schedule, keeps the routes that are running, and trims every line to about 6 meters of detail so the map stays quick on a phone. Stops shared by two agencies are merged into one. The last run was ${updated}: ${routes} routes and ${stops} stops.`,
       'If an agency’s server is down that week, its last good routes and stops are kept. One flaky server never wipes an agency off the map.',
@@ -38,20 +38,20 @@ const stopsOnLine = [
   },
   {
     name: 'The site rebuilds',
-    where: 'On Cloudflare, whenever the data changes.',
+    where: 'Cloudflare, whenever the data changes',
     body: ['The new routes and stops are saved with the rest of the site’s code, which starts a rebuild. There’s no database. The pages and the data are plain files.'],
   },
   {
     name: 'Vehicles report where they are',
-    where: 'On each agency’s live feed.',
+    where: 'Each agency’s live feed',
     body: [
       `${live} of those systems also publish a live feed (GTFS-realtime) with the position of every vehicle that’s out. ${list(viaOba)} come through OneBusAway Puget Sound, a shared service for the region.`,
       'The rest publish schedules only, so the map shows their routes and stops without vehicles.',
     ],
   },
   {
-    name: 'One small program gathers them',
-    where: 'On a Cloudflare Worker, only while someone has the map open.',
+    name: 'A small program gathers the live feeds',
+    where: 'A Cloudflare Worker, only while someone has the map open',
     body: [
       'When the map asks, a small program reads every live feed at once and merges them into one answer. That answer is kept for 15 seconds, so each agency’s server is asked only a few times a minute, however many people are watching.',
       'A feed that doesn’t answer is skipped. The others still show.',
@@ -59,20 +59,19 @@ const stopsOnLine = [
   },
   {
     name: 'Your browser draws the map',
-    where: 'On your phone or computer.',
+    where: 'Your phone or computer',
     body: [
       'The map asks for new positions every 15 seconds and moves each vehicle to where it is now. The streets and water underneath come from OpenFreeMap, built on OpenStreetMap, recolored to match the page.',
-      'If you use “Find my location”, your position stays in your browser. It’s never sent anywhere.',
     ],
   },
 ];
 ---
 
 <LabLayout
-  title="How Washington transit works"
-  description="Where the live Washington transit map gets its routes, stops and vehicle positions, and the route that data takes from each agency’s server to your screen."
+  title="About Washington transit"
+  description="What the live Washington transit map is, how it works, where its routes, stops and vehicle positions come from, and what it collects."
   image="/transit/share-about.png"
-  imageAlt="How Washington transit works: the title on a green sign beside a transit line with six stops, from Agencies publish to Your browser draws."
+  imageAlt="About Washington transit: the title on a green sign beside a transit line with six stops, from Agencies publish their schedules to Your browser draws the map."
   themeColor={{ light: '#eceee8', dark: '#121719' }}
 >
   <ul class="lab-nav" slot="bar">
@@ -82,22 +81,24 @@ const stopsOnLine = [
   </ul>
 
   <article class="page">
-    <header class="intro">
-      <h1 class="plate">How Washington transit works</h1>
-      <p class="summary">
-        The <a href="/transit/">map</a> shows every bus, train and ferry in Washington that reports where it is, with every route and stop
-        around it. Here’s the route that information takes to get to your screen.
-      </p>
-    </header>
+    <h1 class="plate title">About Washington transit</h1>
 
-    <section aria-labelledby="route-heading">
-      <h2 id="route-heading">The route, stop by stop</h2>
+    <section class="notes" aria-labelledby="what-heading">
+      <h2 id="what-heading">What it is</h2>
+      <p>
+        <a href="/transit/">A live map</a> of every bus, train and ferry in Washington that reports where it is, with every route and stop
+        around it. Tap a vehicle to see its route and where it’s headed, or search for a route or an agency.
+      </p>
+    </section>
+
+    <section aria-labelledby="how-heading">
+      <h2 id="how-heading">How it works</h2>
       <ol class="line">
         {
           stopsOnLine.map((stop) => (
             <li>
               <h3>{stop.name}</h3>
-              <p class="where">{stop.where}</p>
+              <p class="where">Where it runs: {stop.where}.</p>
               {stop.body.map((text) => (
                 <p>{text}</p>
               ))}
@@ -108,7 +109,7 @@ const stopsOnLine = [
     </section>
 
     <section class="notes" aria-labelledby="sources-heading">
-      <h2 id="sources-heading">Where it all comes from</h2>
+      <h2 id="sources-heading">Where the data comes from</h2>
       <p>
         Every schedule and live feed belongs to the agency that publishes it. The feeds were found through
         the <a href="https://mobilitydatabase.org">Mobility Database</a> and <a href="https://www.transit.land">Transitland</a>. Map tiles are
@@ -119,7 +120,7 @@ const stopsOnLine = [
     </section>
 
     <section class="notes" aria-labelledby="trust-heading">
-      <h2 id="trust-heading">How far to trust it</h2>
+      <h2 id="trust-heading">Good to know</h2>
       <p>
         A vehicle on the map is where its agency last said it was, so it’s always a little behind the real bus. Some vehicles don’t report at
         all, and a missing bus isn’t proof there’s no bus. For catching a ride, use the agency’s own app or the sign at the stop.
@@ -133,16 +134,17 @@ const stopsOnLine = [
     <section class="notes" aria-labelledby="privacy-heading">
       <h2 id="privacy-heading">Privacy</h2>
       <p>
-        Your browser asks OpenFreeMap’s servers for the part of the map you’re looking at. Analytics works the same as the rest of
+        Your browser asks OpenFreeMap’s servers for the part of the map you’re looking at. If you use “Find my location”, your position
+        stays in your browser and is never sent anywhere. Analytics works the same as the rest of
         kylepace.dev: anonymous, no cookies, and you can turn it off (<a href="https://kylepace.dev/privacy/">privacy</a>).
       </p>
     </section>
 
     <section class="notes" aria-labelledby="code-heading">
-      <h2 id="code-heading">The code</h2>
+      <h2 id="code-heading">Get in touch</h2>
       <p>
-        It’s all public: <a href="https://github.com/kyle-pace/wa-transit-map">github.com/kyle-pace/wa-transit-map</a>. If an agency is
-        missing or something looks wrong, <a href="mailto:mail@kylepace.net">tell me</a>.
+        If an agency is missing or something looks wrong, email <a href="mailto:mail@kylepace.net">mail@kylepace.net</a>. The code is public:
+        <a href="https://github.com/kyle-pace/wa-transit-map">github.com/kyle-pace/wa-transit-map</a>.
       </p>
     </section>
   </article>
@@ -155,24 +157,15 @@ const stopsOnLine = [
   }
 
   /* The page's sign, the same plate as the agencies page. */
-  .intro h1 {
-    display: inline;
-    margin: 0;
+  .title {
+    display: inline-block;
+    margin: 0 0 var(--space-8);
     padding: 0.08em 0.35em 0.12em;
     font-size: var(--step-2);
     font-weight: 700;
-    line-height: 1.45;
+    line-height: 1.2;
     letter-spacing: -0.015em;
     border-radius: var(--radius-sm);
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
-  }
-
-  .summary {
-    max-width: 44rem;
-    margin: var(--space-4) 0 var(--space-8);
-    font-size: var(--step-1);
-    line-height: 1.4;
   }
 
   h2 {
@@ -205,7 +198,7 @@ const stopsOnLine = [
     --stop: 1.25rem;
     --track: 0.375rem;
     list-style: none;
-    margin: var(--space-6) 0 var(--space-12);
+    margin: var(--space-6) 0 var(--space-8);
     padding: 0;
   }
 

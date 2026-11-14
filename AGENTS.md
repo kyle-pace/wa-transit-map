@@ -79,7 +79,8 @@ Every project uses the same rules, so charts read the same way everywhere.
 - Leave Amplitude's own `[Amplitude] …` events alone. Add custom events only for actions that answer a real product question; autocapture covers page views and clicks.
 - **One Amplitude project per product.**
 - kylepace.dev and every experiment on it share the kylepace.dev project, so each experiment's custom events also send `experiment` with the project's slug (`experiment: "skill-tree"`).
-- **Tracking plan first:** add each new event to the project's tracking plan in Amplitude, with a description and category, when it ships. Nothing should arrive as "unexpected".
+- **Every new feature ships with its events.** Building a feature includes its analytics: the events that say whether people find it and use it, written in the same change as the feature, not left as a follow-up. Say in your report which events you added, or why the feature needs none.
+- **Tracking plan first:** add each new event and its properties to the project's tracking plan in Amplitude, with a description and category, as part of the same piece of work. Do it yourself when you can reach Amplitude; if you can't, say so and list exactly what needs adding. Nothing should arrive as "unexpected".
 - **Renaming an event:** rename it in code, then merge the old name into the new one in Amplitude so history stays connected. Don't rename in Amplitude alone.
 - **New product:** create its Amplitude project and add a row for it to the "All projects overview" dashboard. A new experiment on kylepace.dev needs neither: it appears there by page path.
 
@@ -96,7 +97,8 @@ Every project uses the same rules, so charts read the same way everywhere.
 - Before building a page or app's look, write a short plan in `design/PLAN.md`: the subject and who it's for, the one bold element, 4 to 6 named colors (light and dark), and the layout as a sketch. Take the ideas from the subject's own world, not from other websites. If a frontend-design skill is available, load it.
 - Check the plan against the generated defaults and change anything that matches: a big headline over a muted sentence and a pill button; pills or one corner radius on everything; grids of identical cards; small labels above headings; colored dots or squares as decoration; details joined with middle dots; monospace for small labels; copy that explains the interface instead of using it.
 - Spend boldness in one place and keep the rest quiet. Look at screenshots (phone and desktop, light and dark) before calling it done.
-- Experiments on kylepace.dev are their own pages (kp-design's `LabLayout`) with their own look. The app comes first; the explanation goes in an About section linked from the top bar.
+- Experiments on kylepace.dev are their own pages (kp-design's `LabLayout`) with their own look. The app comes first; the explanation goes on its About page, linked from the top bar.
+- About pages use the same title, headings and step format everywhere (the `about-page` skill). The look can follow the project's theme; the words never do.
 
 ### How things get built
 
@@ -158,6 +160,7 @@ Match the checking to the change. If you're unsure which tier a change is, use t
 **Tier 2: something people see or use changed.** Layout, styles, a component, a new control, new behavior.
 
 - Everything in tier 1.
+- A new feature has its events in code and in the Amplitude tracking plan (see "Analytics events").
 - Run the project's check command (`npm run check` where a project has one). It runs axe on every page in light and dark, fails on sideways scrolling, and saves screenshots at 320, 768, 1280 and 1920 px. Fix what it finds.
 - Look at the changed screen in light and dark, at the smallest size and a large one.
 - Use new controls with the keyboard (and VoiceOver in apps): reachable, visible focus, a name that makes sense.
@@ -184,7 +187,7 @@ Washington transit, live: every bus, train and ferry in Washington that reports 
 - **OneBusAway key:** Sound Transit, Pierce Transit, Washington State Ferries and the Seattle Streetcar come through OneBusAway Puget Sound. The Worker reads the `OBA_API_KEY` secret and falls back to the shared `TEST` key.
 - **The map:** `src/components/TransitMap.astro` (markup, styles) and `transit-map.ts` (MapLibre logic). The basemap is OpenFreeMap, approved for this project only (`.agents/allowed-hosts.txt`).
 - **It's its own Cloudflare Worker (`wa-transit-map`) on the hub's domain.** The routes in `wrangler.jsonc` claim `kylepace.dev/transit` and `/transit/*`. Everything it serves, including the live API, lives under `/transit/`. Don't use Astro's `base` option; with the Cloudflare adapter it serves files from the wrong folder.
-- **It stands on its own, not as a page of kylepace.dev.** The shell is kp-design's `LabLayout` (a back link to kylepace.dev, a one-line footer, display settings and analytics to the shared kylepace.dev Amplitude project), pinned to a commit in package.json. The bar's right side holds the lab's own links (Live map, Agencies, About). About is its own page, `src/pages/transit/about.astro` (`/transit/about/`): how the map works, as a strip map with a stop for each step the data takes, with counts and dates read from the data files. If how the data is collected or served changes, change that page too. The map and agencies pages keep a short `#about` section with credits. LabLayout gives no heading sizes, page width or prose styles, so each page styles its own layout.
+- **It stands on its own, not as a page of kylepace.dev.** The shell is kp-design's `LabLayout` (a back link to kylepace.dev, a one-line footer, display settings and analytics to the shared kylepace.dev Amplitude project), pinned to a commit in package.json. The bar's right side holds the lab's own links (Live map, Agencies, About). About is its own page, `src/pages/transit/about.astro` (`/transit/about/`), with the standard title, headings and step format from the `about-page` skill; its "How it works" steps are drawn as a strip map, with counts and dates read from the data files. If how the data is collected or served changes, change that page too. The map and agencies pages keep a short `#about` section with credits. LabLayout gives no heading sizes, page width or prose styles, so each page styles its own layout.
 - **Its look is its own:** `src/styles/theme.css` overrides kp-design's tokens (Shore, Sound, Guide green) and holds the shared bits (the bar links, the green sign plate). The plan behind it is `design/PLAN.md`: the map fills the window with one sign mounted on it, the agencies page is a directory, no pills, eyebrows, middle dots or monospace labels. `transit-map.ts` retints the basemap's land and water to match (`BASEMAP`), so keep the two in step.
 - **Share cards:** `design/og.html` and `design/og-agencies.html` draw the lab's sign, one line and the address over the left side of the original artwork (`design/base-*.png`), rendered to `public/transit/share.png` and `share-agencies.png`. `design/og-about.html` is the about page's card (`share-about.png`), drawn from scratch with the same strip map.
 - Run `npm run build` before pushing; it must pass. Cloudflare Workers Builds deploys `main`.
