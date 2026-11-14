@@ -1,0 +1,22 @@
+# Runs the tests (npm test) on every push and pull request: the weekly data job against
+# saved real and broken schedules, and the live-position reader against a saved feed.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      # Node 24 runs the TypeScript build script directly; no npm install needed.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm test

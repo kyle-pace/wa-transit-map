@@ -36,6 +36,10 @@ jobs:
         with:
           node-version: 24
 
+      # If the script itself is broken, stop before it touches the data.
+      - name: Test the build script
+        run: npm test
+
       - name: Build routes and stops
         run: node scripts/build-transit.ts
 

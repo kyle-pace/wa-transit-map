@@ -10,7 +10,8 @@
     "preview": "astro build && wrangler dev",
     "data": "node scripts/build-transit.ts",
     "astro": "astro",
-    "check": "node .agents/skills/page-check/check.mjs --js-budget 400"
+    "check": "node .agents/skills/page-check/check.mjs --js-budget 400",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.6",

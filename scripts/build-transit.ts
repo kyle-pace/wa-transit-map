@@ -21,6 +21,10 @@
     --only <key,key>   build just these systems (the rest come from the last build)
 
   TRANSIT_STATIC_OVERRIDE='{"kcm":"file:///path/to/gtfs.zip"}' swaps in local zips, for testing.
+  TRANSIT_OUT=/some/folder writes there instead of public/transit/, so tests never touch the real data.
+
+  Exits with an error when every system it tried failed (the network is down, or a host
+  changed everything at once). The last good data is still kept; the red run is the alarm.
 */
 import { spawnSync } from 'node:child_process';
 import { createReadStream, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -30,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { modeOf, systems, type Mode, type TransitSystem } from '../src/lib/transit-feeds.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const OUT = join(root, 'public/transit');
+const OUT = process.env.TRANSIT_OUT || join(root, 'public/transit');
 const TMP = join(root, '.transit-tmp');
 const USER_AGENT = 'kylepace.dev transit map (https://kylepace.dev/transit/)';
 
@@ -401,7 +405,7 @@ function previousBundles(): Map<string, Bundle> {
 
 // ---------- Main ----------
 
-async function main() {
+async function main(): Promise<{ tried: number; failed: number }> {
   const previous = previousBundles();
   const report: Record<string, Report> = {};
   const bundles = new Map<string, Bundle>();
@@ -535,6 +539,16 @@ async function main() {
 
   const kb = (s: string) => `${Math.round(s.length / 1024)} KB`;
   console.log(`\n${features.length} route lines (${kb(routesJson)}), ${stopsOut.length} stops (${kb(stopsJson)}), ${meta.routes.length} routes. ${changed ? 'Changed.' : 'No changes.'}`);
+
+  // A failed feed is a GitHub warning on the run's page, so it gets seen without digging in the log.
+  const attempted = Object.entries(report).filter(([, r]) => r.error !== 'skipped (--only)');
+  const failed = attempted.filter(([, r]) => !r.ok);
+  for (const [key, r] of failed) console.log(`::warning title=Transit feed failed::${key}: ${r.kept ? 'kept the last good data' : 'nothing to keep'}. ${r.error}`);
+  return { tried: attempted.length, failed: failed.length };
 }
 
-await main();
+const failures = await main();
+if (failures.tried > 0 && failures.failed === failures.tried) {
+  console.error(`\nEvery system tried (${failures.tried}) failed. Nothing new was built; the last good data is unchanged.`);
+  process.exit(1);
+}
