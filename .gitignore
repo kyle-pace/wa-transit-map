@@ -18,3 +18,6 @@ npm-debug.log*
 
 # transit map build scratch (scripts/build-transit.ts)
 .transit-tmp/
+
+# npm run check output (screenshots)
+.check/
