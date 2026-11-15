@@ -328,6 +328,8 @@ const totals = {
 ---
 
 <LabLayout
+  lab={{ name: 'the live map', href: '/transit/' }}
+  about="/transit/about/"
   title="Every transit agency in Washington"
   description={`All ${totals.agencies} transit agencies on Kyle Pace’s live Washington transit map, each with its network drawn from its published routes, and how many vehicles are out right now.`}
   image="/transit/share-agencies.png"
@@ -337,7 +339,6 @@ const totals = {
   <ul class="lab-nav" slot="bar">
     <li><a href="/transit/">Live map</a></li>
     <li><a href="/transit/agencies/" aria-current="page">Agencies</a></li>
-    <li><a href="/transit/about/">About</a></li>
   </ul>
 
   <div class="page">

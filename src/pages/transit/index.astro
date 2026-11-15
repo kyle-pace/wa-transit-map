@@ -18,6 +18,8 @@ const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'lon
 ---
 
 <LabLayout
+  lab={{ name: 'the live map', href: '/transit/' }}
+  about="/transit/about/"
   title="Washington transit, live"
   description="Every bus, train and ferry in Washington that reports where it is, on one zoomable map, with every route and stop. Updated every 15 seconds."
   image="/transit/share.png"
@@ -27,7 +29,6 @@ const updated = new Date(meta.updated).toLocaleDateString('en-US', { month: 'lon
   <ul class="lab-nav" slot="bar">
     <li><a href="/transit/" aria-current="page">Live map</a></li>
     <li><a href="/transit/agencies/">Agencies</a></li>
-    <li><a href="/transit/about/">About</a></li>
   </ul>
 
   <TransitMap />
