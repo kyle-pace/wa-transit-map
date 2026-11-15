@@ -5,12 +5,10 @@
   "name": "wa-transit-map",
   "compatibility_date": "2026-11-01",
   "observability": { "enabled": true },
-  // Claims kylepace.dev/transit on the hub's domain. Routes win over the hub's Custom
-  // Domain, so only these paths reach this Worker.
-  "routes": [
-    { "pattern": "kylepace.dev/transit", "zone_name": "kylepace.dev" },
-    { "pattern": "kylepace.dev/transit/*", "zone_name": "kylepace.dev" }
-  ]
+  // Retired: World transit (kyle-pace/world-transit) replaced this map and now claims
+  // kylepace.dev/transit, redirecting its old addresses. This Worker keeps its workers.dev
+  // address only.
+  "workers_dev": true,
   // Secret (not in Git): OBA_API_KEY, the OneBusAway Puget Sound key for Sound Transit,
   // Pierce Transit, WSF and the Seattle Streetcar. Without it the shared TEST key is used.
 }
