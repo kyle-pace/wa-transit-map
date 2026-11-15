@@ -181,6 +181,7 @@ CI runs the check command where a project has one, the stack check (see "Default
 
 Washington transit, live: every bus, train and ferry in Washington that reports where it is, on one map with every route and stop, at [kylepace.dev/transit/](https://kylepace.dev/transit/). It moved here from kylepace.net/labs/transit/ (which now redirects) and is one of the experiments on the [kylepace.dev](https://github.com/kyle-pace/kylepace.dev) hub. The repo is `wa-transit-map`; the path is `/transit/`.
 
+- **Confluence:** [Washington transit, live](https://kylepace.atlassian.net/wiki/spaces/LABS/pages/13697057) in the Labs space, with the data source research under Transit map: global data sources.
 - **Feeds:** `src/lib/transit-feeds.ts` lists every system, its GTFS schedule zips and, where there is one, its GTFS-realtime vehicle feed. It has no imports and only erasable TypeScript, because Node runs it directly from the data script. Add or fix a feed there.
 - **Routes and stops:** `scripts/build-transit.ts` downloads the schedules and writes `public/transit/` (meta, routes, stops, and `report.json` saying what each feed gave). GitHub Actions runs it weekly and whenever the feed list changes (`.github/workflows/transit-data.yml`). Don't hand-edit those files.
 - **Live positions:** `src/pages/transit/api/vehicles.json.ts` fetches every live feed, decodes it (`src/lib/gtfs-rt.ts`) and caches the merged answer at the edge for 15 seconds.
